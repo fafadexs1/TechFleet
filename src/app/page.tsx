@@ -50,17 +50,14 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/20" />
+       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/10" />
       <div className="relative z-10 w-full max-w-md p-4">
-        <Card className="shadow-2xl">
+        <Card className="shadow-2xl border-border/20">
           <CardHeader className="text-center">
-            <div className="mb-4 inline-flex items-center justify-center gap-2">
-                <div className="bg-primary text-primary-foreground p-2 rounded-lg">
-                    <TowerControl className="h-6 w-6" />
-                </div>
-                <h1 className="font-headline text-3xl font-bold text-primary">TechFleet</h1>
-            </div>
-            <CardTitle className="font-headline text-2xl">Bem-vindo de volta</CardTitle>
+             <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <TowerControl className="h-7 w-7" />
+             </div>
+            <CardTitle className="font-headline text-3xl font-bold text-foreground">TechFleet</CardTitle>
             <CardDescription>Faça login para gerenciar sua frota.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -94,7 +91,7 @@ export default function LoginPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <Button type="submit" className="w-full font-bold" disabled={loading}>
+              <Button type="submit" className="w-full font-bold" disabled={loading} size="lg">
                 {loading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>

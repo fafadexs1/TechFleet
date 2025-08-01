@@ -60,13 +60,13 @@ export function WeeklyExpensesChart({ records }: WeeklyExpensesChartProps) {
             <BarChart data={chartData}>
                 <XAxis
                     dataKey="name"
-                    stroke="#888888"
+                    stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                 />
                 <YAxis
-                    stroke="#888888"
+                    stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
@@ -83,7 +83,7 @@ export function WeeklyExpensesChart({ records }: WeeklyExpensesChartProps) {
                                         <span className="text-[0.70rem] uppercase text-muted-foreground">
                                             {payload[0].payload.name}
                                         </span>
-                                        <span className="font-bold text-muted-foreground">
+                                        <span className="font-bold text-foreground">
                                             R$ {payload[0].value?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>

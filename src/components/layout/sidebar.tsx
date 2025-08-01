@@ -69,11 +69,11 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2">
-            <div className="bg-primary text-primary-foreground p-2 rounded-lg">
+        <div className="flex items-center gap-3">
+            <div className="bg-sidebar-primary text-sidebar-primary-foreground p-2 rounded-lg">
                 <TowerControl className="h-6 w-6" />
             </div>
-            <h1 className="font-headline text-2xl font-bold text-primary group-data-[state=collapsed]:hidden">
+            <h1 className="font-headline text-2xl font-bold text-sidebar-primary group-data-[state=collapsed]:hidden">
                 TechFleet
             </h1>
         </div>
@@ -86,7 +86,7 @@ export function AppSidebar() {
                 asChild
                 isActive={pathname.startsWith(item.href)}
                 tooltip={{ children: item.label }}
-                className="font-body"
+                className="font-body text-base"
               >
                 <Link href={item.href}>
                   <item.icon />
@@ -98,7 +98,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="group-data-[collapsible=icon]:hidden p-2">
-        <div className="flex items-center gap-3 p-2 rounded-lg bg-muted">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-sidebar-accent/10">
             {loading ? (
                 <>
                     <Skeleton className="h-10 w-10 rounded-full" />
@@ -114,10 +114,10 @@ export function AppSidebar() {
                         <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                        <p className="font-bold text-sm">{user?.user_metadata.full_name || 'Admin'}</p>
-                        <p className="text-xs text-muted-foreground">{user?.email}</p>
+                        <p className="font-bold text-sm text-sidebar-foreground">{user?.user_metadata.full_name || 'Admin'}</p>
+                        <p className="text-xs text-sidebar-foreground/70">{user?.email}</p>
                     </div>
-                    <Button variant="ghost" size="icon" asChild onClick={handleLogout}>
+                    <Button variant="ghost" size="icon" asChild onClick={handleLogout} className="text-sidebar-foreground/70 hover:bg-sidebar-accent/20 hover:text-sidebar-foreground">
                         <Link href="/">
                             <LogOut className="h-4 w-4" />
                         </Link>
