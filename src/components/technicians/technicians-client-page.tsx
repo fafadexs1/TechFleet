@@ -36,7 +36,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { TechnicianHistorySheet } from '@/components/technicians/technician-history-sheet';
 import { AddTechnicianSheet } from '@/components/technicians/add-technician-sheet';
 
@@ -135,13 +135,7 @@ export function TechniciansClientPage({ technicians: initialTechnicians }: Techn
                                 Adicionar Técnico
                             </Button>
                         </SheetTrigger>
-                        <SheetContent className="w-full sm:max-w-md">
-                             <SheetHeader>
-                                <SheetTitle>Adicionar Novo Técnico</SheetTitle>
-                                <SheetDescription>
-                                    Crie um novo usuário e adicione seus detalhes. Um e-mail de confirmação será enviado.
-                                </SheetDescription>
-                            </SheetHeader>
+                        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
                             <AddTechnicianSheet onTechnicianAdded={handleTechnicianAdded} existingCargos={existingCargos} />
                         </SheetContent>
                     </Sheet>

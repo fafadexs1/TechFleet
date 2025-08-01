@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import type { NewTechnician } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { SheetHeader, SheetTitle, SheetDescription } from '../ui/sheet';
 
 const formSchema = z.object({
   display_name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -111,97 +112,103 @@ export function AddTechnicianSheet({ onTechnicianAdded, existingCargos }: AddTec
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6 pr-6">
-        <FormField
-          control={form.control}
-          name="display_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome Completo</FormLabel>
-              <FormControl>
-                <Input placeholder="João da Silva" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="joao.silva@email.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Senha</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <FormField
-          control={form.control}
-          name="cargo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Cargo</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Selecione um cargo" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                    {existingCargos.map((cargo) => (
-                        <SelectItem key={cargo} value={cargo}>{cargo}</SelectItem>
-                    ))}
-                    </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <FormField
-          control={form.control}
-          name="telefone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefone (Opcional)</FormLabel>
-              <FormControl>
-                <Input placeholder="(11) 99999-8888" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <>
+        <SheetHeader>
+            <SheetTitle>Adicionar Novo Técnico</SheetTitle>
+            <SheetDescription>
+                Crie um novo usuário e adicione seus detalhes. Um e-mail de confirmação será enviado.
+            </SheetDescription>
+        </SheetHeader>
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6 pr-6">
+            <FormField
+            control={form.control}
+            name="display_name"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Nome Completo</FormLabel>
+                <FormControl>
+                    <Input placeholder="João da Silva" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                    <Input type="email" placeholder="joao.silva@email.com" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Senha</FormLabel>
+                <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="cargo"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Cargo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione um cargo" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {existingCargos.map((cargo) => (
+                            <SelectItem key={cargo} value={cargo}>{cargo}</SelectItem>
+                        ))}
+                        </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="telefone"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Telefone (Opcional)</FormLabel>
+                <FormControl>
+                    <Input placeholder="(11) 99999-8888" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
 
-        {formError && (
-             <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erro no Cadastro</AlertTitle>
-                <AlertDescription>{formError}</AlertDescription>
-            </Alert>
-        )}
+            {formError && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Erro no Cadastro</AlertTitle>
+                    <AlertDescription>{formError}</AlertDescription>
+                </Alert>
+            )}
 
-        <Button type="submit" disabled={loading} className="w-full">
-          {loading ? 'Adicionando...' : 'Adicionar Técnico'}
-        </Button>
-      </form>
-    </Form>
+            <Button type="submit" disabled={loading} className="w-full">
+            {loading ? 'Adicionando...' : 'Adicionar Técnico'}
+            </Button>
+        </form>
+        </Form>
+    </>
   );
 }
-
-    

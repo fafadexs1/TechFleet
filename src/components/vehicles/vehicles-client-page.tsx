@@ -12,7 +12,7 @@ import type { Vehicle, Technician } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { VehicleHistorySheet } from '@/components/vehicles/vehicle-history-sheet';
 import { AddVehicleSheet } from '@/components/vehicles/add-vehicle-sheet';
 import { Input } from '@/components/ui/input';
@@ -125,13 +125,7 @@ export function VehiclesClientPage({ vehicles: initialVehicles, technicians }: V
                                     Adicionar Veículo
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent className="w-full sm:max-w-md">
-                                <SheetHeader>
-                                    <SheetTitle>Adicionar Novo Veículo</SheetTitle>
-                                    <SheetDescription>
-                                        Preencha os detalhes do novo veículo para adicioná-lo à frota.
-                                    </SheetDescription>
-                                </SheetHeader>
+                            <SheetContent className="w-full sm:max-w-md overflow-y-auto">
                                 <AddVehicleSheet onVehicleAdded={handleVehicleAdded} />
                             </SheetContent>
                         </Sheet>

@@ -26,6 +26,7 @@ import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { SheetHeader, SheetTitle, SheetDescription } from '../ui/sheet';
 
 const formSchema = z.object({
   placa: z.string().min(7, { message: 'A placa deve ter 7 caracteres.' }).max(7),
@@ -85,156 +86,162 @@ export function AddVehicleSheet({ onVehicleAdded }: AddVehicleSheetProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-6 pr-6">
-        <FormField
-          control={form.control}
-          name="placa"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Placa</FormLabel>
-              <FormControl>
-                <Input placeholder="BRA2E19" {...field} onChange={e => field.onChange(e.target.value.toUpperCase())} maxLength={7} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="marca"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Marca</FormLabel>
-              <FormControl>
-                <Input placeholder="Fiat" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="modelo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Modelo</FormLabel>
-              <FormControl>
-                <Input placeholder="Strada" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="quilometragem"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Quilometragem</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="123456" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <FormField
-          control={form.control}
-          name="data_ultima_manutencao"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Última Manutenção (Opcional)</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP", { locale: ptBR })
-                      ) : (
-                        <span>Escolha uma data</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <FormField
-          control={form.control}
-          name="data_proxima_manutencao"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Próxima Manutenção (Opcional)</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP", { locale: ptBR })
-                      ) : (
-                        <span>Escolha uma data</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    initialFocus
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <>
+      <SheetHeader>
+        <SheetTitle>Adicionar Novo Veículo</SheetTitle>
+        <SheetDescription>
+            Preencha os detalhes do novo veículo para adicioná-lo à frota.
+        </SheetDescription>
+      </SheetHeader>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-6 pr-6">
+          <FormField
+            control={form.control}
+            name="placa"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Placa</FormLabel>
+                <FormControl>
+                  <Input placeholder="BRA2E19" {...field} onChange={e => field.onChange(e.target.value.toUpperCase())} maxLength={7} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="marca"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Marca</FormLabel>
+                <FormControl>
+                  <Input placeholder="Fiat" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="modelo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Modelo</FormLabel>
+                <FormControl>
+                  <Input placeholder="Strada" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="quilometragem"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Quilometragem</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="123456" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="data_ultima_manutencao"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Última Manutenção (Opcional)</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: ptBR })
+                        ) : (
+                          <span>Escolha uma data</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="data_proxima_manutencao"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Próxima Manutenção (Opcional)</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: ptBR })
+                        ) : (
+                          <span>Escolha uma data</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        {formError && (
-             <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erro no Cadastro</AlertTitle>
-                <AlertDescription>{formError}</AlertDescription>
-            </Alert>
-        )}
+          {formError && (
+              <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Erro no Cadastro</AlertTitle>
+                  <AlertDescription>{formError}</AlertDescription>
+              </Alert>
+          )}
 
-        <Button type="submit" disabled={loading} className="w-full">
-          {loading ? 'Adicionando...' : 'Adicionar Veículo'}
-        </Button>
-      </form>
-    </Form>
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? 'Adicionando...' : 'Adicionar Veículo'}
+          </Button>
+        </form>
+      </Form>
+    </>
   );
 }
-
-    

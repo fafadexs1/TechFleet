@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Wallet, Filter, TrendingUp, Car, PlusCircle, Paperclip, CheckCircle, DollarSign } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AddExpenseSheet } from '@/components/expenses/add-expense-sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
@@ -158,12 +158,6 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                 </Button>
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-                <SheetHeader>
-                <SheetTitle>Adicionar Nova Despesa</SheetTitle>
-                <SheetDescription>
-                    Registre um novo gasto manualmente.
-                </SheetDescription>
-                </SheetHeader>
                 <AddExpenseSheet 
                     onExpenseAdded={handleExpenseAdded} 
                     technicians={technicians} 
@@ -336,7 +330,3 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
     </div>
   );
 }
-
-    
-
-    
