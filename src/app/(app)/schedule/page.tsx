@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -61,7 +62,7 @@ const ScheduleSkeleton = () => (
     Array.from({ length: 3 }).map((_, i) => (
         <Card key={i} className="mb-4">
             <CardHeader>
-                <Skeleton className="h-6 w-1/4" />
+                <Skeleton className="h-6 w-1/2" />
             </CardHeader>
             <CardContent>
                  <Table>
@@ -71,7 +72,7 @@ const ScheduleSkeleton = () => (
                             <TableHead><Skeleton className="h-4 w-20" /></TableHead>
                             <TableHead><Skeleton className="h-4 w-16" /></TableHead>
                             <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-                            <TableHead className="text-right"><Skeleton className="h-4 w-16" /></TableHead>
+                            <TableHead className="text-right"><Skeleton className="h-4 w-24" /></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -81,7 +82,7 @@ const ScheduleSkeleton = () => (
                                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-4 w-24" /></TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -123,12 +124,8 @@ export default function SchedulePage() {
         fetchScheduleRecords();
     }, []);
 
-    const { years, months, filteredRecords } = useMemo(() => {
-        const years = [...new Set(allRecords.map(r => parseISO(r.datahora).getFullYear().toString()))];
-        const months = [...new Set(allRecords
-            .filter(r => parseISO(r.datahora).getFullYear().toString() === selectedYear)
-            .map(r => format(parseISO(r.datahora), 'MMMM', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase()))
-        )];
+    const { years, filteredRecords } = useMemo(() => {
+        const years = [...new Set(allRecords.map(r => parseISO(r.datahora).getFullYear().toString()))].sort((a,b) => b.localeCompare(a));
 
         const filtered = allRecords.filter(r => {
              const recordDate = parseISO(r.datahora);
@@ -137,7 +134,7 @@ export default function SchedulePage() {
              return yearMatch && monthMatch;
         });
 
-        return { years, months, filteredRecords: groupRecordsByDate(filtered) };
+        return { years, filteredRecords: groupRecordsByDate(filtered) };
     }, [allRecords, selectedYear, selectedMonth]);
 
     const sortedDates = Object.keys(filteredRecords).sort((a, b) => b.localeCompare(a));
@@ -256,3 +253,5 @@ export default function SchedulePage() {
         </div>
     );
 }
+
+    
