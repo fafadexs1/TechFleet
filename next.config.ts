@@ -2,7 +2,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Re-added to force recompile
   typescript: {
     ignoreBuildErrors: true,
   },
