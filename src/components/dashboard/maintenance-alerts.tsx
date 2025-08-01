@@ -1,3 +1,6 @@
+
+'use client';
+
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -5,12 +8,35 @@ import type { Vehicle } from "@/types";
 import { Wrench } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useMounted } from "@/hooks/use-mounted";
+import { Skeleton } from "../ui/skeleton";
+
 
 export function MaintenanceAlerts({ vehicles }: { vehicles: Vehicle[] }) {
+    const isMounted = useMounted();
+
     const vehiclesNeedingAttention = vehicles
         .filter(v => v.data_proxima_manutencao)
         .sort((a, b) => new Date(a.data_proxima_manutencao!).getTime() - new Date(b.data_proxima_manutencao!).getTime())
         .slice(0, 5);
+    
+    const MaintenanceAlertsSkeleton = () => (
+         <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/4" />
+                    </div>
+                    <div className="text-right space-y-2">
+                       <Skeleton className="h-4 w-20 ml-auto" />
+                       <Skeleton className="h-3 w-16 ml-auto" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 
     return (
         <Card className="col-span-1 lg:col-span-2">
@@ -22,30 +48,32 @@ export function MaintenanceAlerts({ vehicles }: { vehicles: Vehicle[] }) {
                 <CardDescription>Veículos que precisam de atenção em breve.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
-                    {vehiclesNeedingAttention.length > 0 ? vehiclesNeedingAttention.map(vehicle => (
-                        <div key={vehicle.id} className="flex items-center space-x-4">
-                            <Avatar className="h-10 w-10 rounded-lg">
-                                <AvatarImage src={vehicle.foto_carro} alt={vehicle.modelo} data-ai-hint="car side" className="rounded-lg"/>
-                                <AvatarFallback className="rounded-lg">{vehicle.marca.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                                <p className="font-medium">{vehicle.marca} {vehicle.modelo}</p>
-                                <p className="text-sm text-muted-foreground">{vehicle.placa}</p>
+                {!isMounted ? <MaintenanceAlertsSkeleton/> : (
+                    <div className="space-y-4">
+                        {vehiclesNeedingAttention.length > 0 ? vehiclesNeedingAttention.map(vehicle => (
+                            <div key={vehicle.id} className="flex items-center space-x-4">
+                                <Avatar className="h-10 w-10 rounded-lg">
+                                    <AvatarImage src={vehicle.foto_carro} alt={vehicle.modelo} data-ai-hint="car side" className="rounded-lg"/>
+                                    <AvatarFallback className="rounded-lg">{vehicle.marca.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <p className="font-medium">{vehicle.marca} {vehicle.modelo}</p>
+                                    <p className="text-sm text-muted-foreground">{vehicle.placa}</p>
+                                </div>
+                                <div className="text-right">
+                                    <Badge variant={new Date(vehicle.data_proxima_manutencao!) < new Date() ? 'destructive' : 'default'} className={new Date(vehicle.data_proxima_manutencao!) < new Date() ? '' : 'bg-accent text-accent-foreground hover:bg-accent/80'}>
+                                        {formatDistanceToNow(new Date(vehicle.data_proxima_manutencao!), { addSuffix: true, locale: ptBR })}
+                                    </Badge>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {new Date(vehicle.data_proxima_manutencao!).toLocaleDateString('pt-BR')}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="text-right">
-                                <Badge variant={new Date(vehicle.data_proxima_manutencao!) < new Date() ? 'destructive' : 'default'} className={new Date(vehicle.data_proxima_manutencao!) < new Date() ? '' : 'bg-accent text-accent-foreground hover:bg-accent/80'}>
-                                    {formatDistanceToNow(new Date(vehicle.data_proxima_manutencao!), { addSuffix: true, locale: ptBR })}
-                                </Badge>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {new Date(vehicle.data_proxima_manutencao!).toLocaleDateString('pt-BR')}
-                                </p>
-                            </div>
-                        </div>
-                    )) : (
-                        <p className="text-sm text-muted-foreground text-center py-4">Nenhum veículo com manutenção próxima.</p>
-                    )}
-                </div>
+                        )) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">Nenhum veículo com manutenção próxima.</p>
+                        )}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

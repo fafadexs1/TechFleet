@@ -1,16 +1,26 @@
+
+'use client';
+
 import { Car, Users, Wrench } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { MaintenanceAlerts } from '@/components/dashboard/maintenance-alerts';
 import { RecentActivityList } from '@/components/dashboard/recent-activity';
 import { mockVehicles, mockTechnicians, mockRecentActivities } from '@/lib/data';
+import { useMounted } from '@/hooks/use-mounted';
 
 // In a real app, this would be an async function fetching data from Supabase
 export default function DashboardPage() {
+    const isMounted = useMounted();
     const vehicles = mockVehicles;
     const technicians = mockTechnicians;
     const recentActivities = mockRecentActivities;
 
     const activeTechnicians = technicians.filter(t => t.online === 'true').length;
+
+    // We can't render the card that uses `new Date()` on the server
+    const pendingMaintenance = isMounted 
+        ? vehicles.filter(v => v.data_proxima_manutencao && new Date(v.data_proxima_manutencao) < new Date()).length.toString()
+        : '...';
 
     return (
         <div className="flex flex-col gap-6">
@@ -30,7 +40,7 @@ export default function DashboardPage() {
                 />
                 <StatCard 
                     title="Manutenções Pendentes" 
-                    value={vehicles.filter(v => v.data_proxima_manutencao && new Date(v.data_proxima_manutencao) < new Date()).length.toString()} 
+                    value={pendingMaintenance} 
                     icon={Wrench}
                     description="Veículos com manutenção atrasada"
                 />
