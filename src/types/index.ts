@@ -104,10 +104,10 @@ export type Payment = {
     nomepagamento?: string;
     pagamentofeito?: boolean;
     valorapagar?: number;
-    created_at?: string; // date in schema
-    tecnico?: string; // UUID
+    created_at?: string;
+    tecnico?: string; // UUID of user who made the payment
     comprovantes_abastecimentos?: string[] | null;
-    valores_abastecidos?: number[];
+    valores_abastecidos?: number[] | null;
 };
 
 // For supabase client, can be generated with: npx supabase gen types typescript --project-id "your-project-ref" > src/types/database.types.ts

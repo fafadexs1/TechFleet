@@ -155,6 +155,13 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
         return;
     }
     
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        toast({ title: "Erro de autenticação", description: "Usuário não encontrado. Faça login novamente.", variant: "destructive"});
+        setLoadingPayment(null);
+        return;
+    }
+
     const receiptUrls = recordsToUpdate
       .map(r => r.comprovante_gasolina)
       .filter((url): url is string => !!url);
@@ -170,11 +177,11 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
             nomepagamento: `Despesas Diárias - ${firstRecord.tecnico_nome || 'N/A'}`,
             valorapagar: dayData.total,
             pagamentofeito: true,
-            tecnico: firstRecord.tecnicoresponsavel,
+            tecnico: user.id, // Changed to the logged-in user's ID
             created_at: new Date().toISOString(),
             comprovantes_abastecimentos: receiptUrls.length > 0 ? receiptUrls : null,
             valores_abastecidos: expenseValues,
-       } as Payment);
+       });
 
     if (paymentError) {
         toast({ title: "Erro ao registrar pagamento", description: paymentError.message, variant: "destructive" });
