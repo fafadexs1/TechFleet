@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord, Technician } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, DollarSign, Wallet } from 'lucide-react';
+import { AlertCircle, DollarSign, Wallet, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type GroupedExpenses = {
   [date: string]: {
@@ -45,33 +46,71 @@ const ExpenseSkeleton = () => (
 );
 
 export default function ExpensesPage() {
-  const [expenses, setExpenses] = useState<DailyRecord[]>([]);
+  const [allExpenses, setAllExpenses] = useState<DailyRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+  const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
+  const [technicians, setTechnicians] = useState<Map<string, Technician>>(new Map());
+
+
   useEffect(() => {
-    const fetchExpenses = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
-      const { data, error } = await supabase
+      
+      const { data: expensesData, error: expensesError } = await supabase
         .from('registros')
         .select('*')
         .gt('gasto', 0)
         .order('datahora', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching expenses:', error);
+      if (expensesError) {
+        console.error('Error fetching expenses:', expensesError);
         setError('Não foi possível carregar as despesas.');
-      } else {
-        setExpenses(data as DailyRecord[]);
+        setLoading(false);
+        return;
       }
+      
+      const { data: techsData, error: techsError } = await supabase.from('membros').select('*');
+      if (techsError) {
+        console.warn('Could not fetch technicians', techsError);
+      } else {
+        setTechnicians(new Map(techsData.map(t => [t.uuid, t])));
+      }
+
+      setAllExpenses(expensesData as DailyRecord[]);
       setLoading(false);
     };
-    fetchExpenses();
+    fetchData();
   }, []);
 
+  const { years, monthOptions, filteredExpenses } = useMemo(() => {
+    const years = [...new Set(allExpenses.map(r => parseISO(r.datahora).getFullYear().toString()))].sort((a,b) => b.localeCompare(a));
+    
+    const monthOptions = [
+        { value: '01', label: 'Janeiro' }, { value: '02', label: 'Fevereiro' },
+        { value: '03', label: 'Março' }, { value: '04', label: 'Abril' },
+        { value: '05', label: 'Maio' }, { value: '06', label: 'Junho' },
+        { value: '07', label: 'Julho' }, { value: '08', 'label': 'Agosto' },
+        { value: '09', 'label': 'Setembro' }, { value: '10', 'label': 'Outubro' },
+        { value: '11', 'label': 'Novembro' }, { value: '12', 'label': 'Dezembro' }
+    ];
+
+    const filtered = allExpenses.filter(r => {
+        const recordDate = parseISO(r.datahora);
+        const yearMatch = recordDate.getFullYear().toString() === selectedYear;
+        const monthMatch = (recordDate.getMonth() + 1).toString().padStart(2, '0') === selectedMonth;
+        return yearMatch && monthMatch;
+    });
+
+    return { years, monthOptions, filteredExpenses: filtered };
+  }, [allExpenses, selectedYear, selectedMonth]);
+
+
   const groupedExpenses = useMemo(() => {
-    return expenses.reduce((acc, record) => {
+    return filteredExpenses.reduce((acc, record) => {
       const date = format(parseISO(record.datahora), 'yyyy-MM-dd');
       if (!acc[date]) {
         acc[date] = {
@@ -87,7 +126,7 @@ export default function ExpensesPage() {
       }
       return acc;
     }, {} as GroupedExpenses);
-  }, [expenses]);
+  }, [filteredExpenses]);
 
   const sortedDates = Object.keys(groupedExpenses).sort((a, b) => b.localeCompare(a));
   const defaultOpenAccordion = sortedDates.slice(0, 1);
@@ -104,6 +143,46 @@ export default function ExpensesPage() {
         </p>
       </div>
 
+       <Card>
+            <CardHeader className="flex-row items-center gap-4 space-y-0 pb-4">
+                <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5"/>
+                    <h3 className="font-semibold text-lg">Filtros</h3>
+                </div>
+            </CardHeader>
+            <CardContent className="flex gap-4">
+                <div className="flex flex-col gap-2 w-[180px]">
+                    <label className="text-sm font-medium">Mês</label>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Mês" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {monthOptions.map(month => (
+                                <SelectItem key={month.value} value={month.value}>
+                                    {month.label}
+                                </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex flex-col gap-2 w-[120px]">
+                    <label className="text-sm font-medium">Ano</label>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Ano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {years.map(year => (
+                                <SelectItem key={year} value={year}>{year}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </CardContent>
+        </Card>
+
+
       {loading ? (
         <ExpenseSkeleton />
       ) : error ? (
@@ -117,7 +196,7 @@ export default function ExpensesPage() {
           <CardContent className="text-center py-16 text-muted-foreground">
             <Wallet className="mx-auto h-12 w-12 mb-4" />
             <h3 className="text-xl font-semibold">Nenhuma despesa encontrada</h3>
-            <p>Não há registros de gastos no sistema.</p>
+            <p>Não há registros de gastos para o período selecionado.</p>
           </CardContent>
         </Card>
       ) : (
@@ -164,7 +243,7 @@ export default function ExpensesPage() {
                           <TableRow key={record.id}>
                             <TableCell>{format(parseISO(record.datahora), 'HH:mm')}</TableCell>
                             <TableCell className="font-medium">{record.registro_motivo}</TableCell>
-                            <TableCell>{record.tecnico_nome}</TableCell>
+                            <TableCell>{technicians.get(record.tecnicoresponsavel!)?.display_name || record.tecnico_nome}</TableCell>
                             <TableCell>{record.placa_carro}</TableCell>
                             <TableCell className="text-right font-mono">
                               R$ {record.gasto?.toFixed(2).replace('.', ',')}

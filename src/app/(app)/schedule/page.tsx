@@ -6,13 +6,12 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Calendar, Filter } from 'lucide-react';
+import { AlertCircle, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import type { DailyRecord } from '@/types';
 import { format, intervalToDuration, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type GroupedRecords = { [date: string]: DailyRecord[] };
 
@@ -99,9 +98,6 @@ export default function SchedulePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-    const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
-
     useEffect(() => {
         const fetchScheduleRecords = async () => {
             setLoading(true);
@@ -124,30 +120,12 @@ export default function SchedulePage() {
         fetchScheduleRecords();
     }, []);
 
-    const { years, filteredRecords } = useMemo(() => {
-        const years = [...new Set(allRecords.map(r => parseISO(r.datahora).getFullYear().toString()))].sort((a,b) => b.localeCompare(a));
-
-        const filtered = allRecords.filter(r => {
-             const recordDate = parseISO(r.datahora);
-             const yearMatch = recordDate.getFullYear().toString() === selectedYear;
-             const monthMatch = (recordDate.getMonth() + 1).toString().padStart(2, '0') === selectedMonth;
-             return yearMatch && monthMatch;
-        });
-
-        return { years, filteredRecords: groupRecordsByDate(filtered) };
-    }, [allRecords, selectedYear, selectedMonth]);
-
-    const sortedDates = Object.keys(filteredRecords).sort((a, b) => b.localeCompare(a));
+    const groupedRecords = useMemo(() => {
+        return groupRecordsByDate(allRecords);
+    }, [allRecords]);
+    
+    const sortedDates = Object.keys(groupedRecords).sort((a, b) => b.localeCompare(a));
     const defaultOpenAccordion = sortedDates.slice(0, 2);
-
-    const monthOptions = [
-        { value: '01', label: 'Janeiro' }, { value: '02', label: 'Fevereiro' },
-        { value: '03', label: 'Março' }, { value: '04', label: 'Abril' },
-        { value: '05', label: 'Maio' }, { value: '06', label: 'Junho' },
-        { value: '07', label: 'Julho' }, { value: '08', label: 'Agosto' },
-        { value: '09', label: 'Setembro' }, { value: '10', label: 'Outubro' },
-        { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' }
-    ];
 
     return (
         <div className="flex flex-col gap-6">
@@ -159,39 +137,6 @@ export default function SchedulePage() {
                     Jornadas de trabalho diárias dos técnicos registradas no aplicativo.
                 </p>
             </div>
-
-             <Card>
-                <CardHeader className="flex-row items-center gap-4 space-y-0">
-                    <div className="flex items-center gap-2">
-                        <Filter className="h-5 w-5"/>
-                        <h3 className="font-semibold">Filtros</h3>
-                    </div>
-                     <div className="flex gap-4">
-                        <Select value={selectedYear} onValueChange={setSelectedYear}>
-                            <SelectTrigger className="w-[120px]">
-                                <SelectValue placeholder="Ano" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {years.map(year => (
-                                    <SelectItem key={year} value={year}>{year}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Mês" />
-                            </SelectTrigger>
-                            <SelectContent>
-                               {monthOptions.map(month => (
-                                     <SelectItem key={month.value} value={month.value}>
-                                         {month.label}
-                                     </SelectItem>
-                               ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardHeader>
-            </Card>
 
             {error && (
                 <Alert variant="destructive" className="mb-4">
@@ -225,7 +170,7 @@ export default function SchedulePage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredRecords[date].map((record) => (
+                                            {groupedRecords[date].map((record) => (
                                                 <TableRow key={record.id}>
                                                     <TableCell className="font-medium">{record.tecnico_nome}</TableCell>
                                                     <TableCell>{record.placa_carro || 'N/D'}</TableCell>
@@ -253,5 +198,3 @@ export default function SchedulePage() {
         </div>
     );
 }
-
-    
