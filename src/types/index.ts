@@ -98,14 +98,14 @@ export type AppVersion = {
 
 // Based on public.pagamentos
 export type Payment = {
-    id: number;
-    created_at: string;
-    motivo: string;
-    nomepagamento: string;
-    valorapagar: number;
-    pagamentofeito: boolean;
+    id?: number;
     comprovante_pagamento?: string;
-    tecnico: string; // UUID
+    motivo?: string;
+    nomepagamento?: string;
+    pagamentofeito?: boolean;
+    valorapagar?: number;
+    created_at?: string; // date in schema
+    tecnico?: string; // UUID
 };
 
 // For supabase client, can be generated with: npx supabase gen types typescript --project-id "your-project-ref" > src/types/database.types.ts
