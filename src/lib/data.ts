@@ -1,10 +1,10 @@
 import type { Vehicle, Technician, DailyRecord, RecentActivity, AppVersion, Payment } from '@/types';
 
 export const mockVehicles: Vehicle[] = [
-  { id: 1, created_at: "2023-10-01T09:00:00Z", placa: 'BRA2E19', marca: 'Fiat', modelo: 'Strada', quilometragem: 125030, data_ultima_manutencao: '2024-05-15T09:00:00Z', data_proxima_manutencao: '2024-08-15T09:00:00Z', tecnico_atual: 'João Silva', displayname_tecnico: 'João Silva', bindado: true, foto_carro: 'https://placehold.co/600x400.png' },
-  { id: 2, created_at: "2023-10-01T09:00:00Z", placa: 'XYZ7890', marca: 'Chevrolet', modelo: 'Montana', quilometragem: 89000, data_ultima_manutencao: '2024-06-01T09:00:00Z', data_proxima_manutencao: '2024-09-01T09:00:00Z', tecnico_atual: 'Maria Oliveira', displayname_tecnico: 'Maria Oliveira', bindado: true, foto_carro: 'https://placehold.co/600x400.png' },
-  { id: 3, created_at: "2023-10-01T09:00:00Z", placa: 'PQR1234', marca: 'Volkswagen', modelo: 'Saveiro', quilometragem: 152000, data_ultima_manutencao: '2024-04-20T09:00:00Z', data_proxima_manutencao: '2024-07-20T09:00:00Z', tecnico_atual: 'Carlos Pereira', displayname_tecnico: 'Carlos Pereira', bindado: true, foto_carro: 'https://placehold.co/600x400.png' },
-  { id: 4, created_at: "2023-10-01T09:00:00Z", placa: 'JKL5678', marca: 'Ford', modelo: 'Ranger', quilometragem: 75000, data_ultima_manutencao: '2024-07-01T09:00:00Z', data_proxima_manutencao: '2024-10-01T09:00:00Z', tecnico_atual: undefined, displayname_tecnico: '', bindado: false, foto_carro: 'https://placehold.co/600x400.png' },
+  { id: 1, created_at: "2023-10-01T09:00:00Z", placa: 'BRA2E19', marca: 'Fiat', modelo: 'Strada', quilometragem: 125030, data_ultima_manutencao: '2024-05-15T09:00:00Z', data_proxima_manutencao: '2024-08-15T09:00:00Z', tecnico_atual: 'João Silva', displayname_tecnico: 'João Silva', foto_carro: 'https://placehold.co/600x400.png' },
+  { id: 2, created_at: "2023-10-01T09:00:00Z", placa: 'XYZ7890', marca: 'Chevrolet', modelo: 'Montana', quilometragem: 89000, data_ultima_manutencao: '2024-06-01T09:00:00Z', data_proxima_manutencao: '2024-09-01T09:00:00Z', tecnico_atual: 'Maria Oliveira', displayname_tecnico: 'Maria Oliveira', foto_carro: 'https://placehold.co/600x400.png' },
+  { id: 3, created_at: "2023-10-01T09:00:00Z", placa: 'PQR1234', marca: 'Volkswagen', modelo: 'Saveiro', quilometragem: 152000, data_ultima_manutencao: '2024-04-20T09:00:00Z', data_proxima_manutencao: '2024-07-20T09:00:00Z', tecnico_atual: 'Carlos Pereira', displayname_tecnico: 'Carlos Pereira', foto_carro: 'https://placehold.co/600x400.png' },
+  { id: 4, created_at: "2023-10-01T09:00:00Z", placa: 'JKL5678', marca: 'Ford', modelo: 'Ranger', quilometragem: 75000, data_ultima_manutencao: '2024-07-01T09:00:00Z', data_proxima_manutencao: '2024-10-01T09:00:00Z', tecnico_atual: undefined, displayname_tecnico: '', foto_carro: 'https://placehold.co/600x400.png' },
 ];
 
 export const mockTechnicians: Technician[] = [

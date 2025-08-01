@@ -330,7 +330,6 @@ export default function VehiclesPage() {
                                                     <TableCell className="font-mono">{vehicle.placa || 'N/A'}</TableCell>
                                                     <TableCell>
                                                         <p className="font-medium">{vehicle.marca} {vehicle.modelo}</p>
-                                                        {vehicle.bindado && <Badge variant="outline">Blindado</Badge>}
                                                     </TableCell>
                                                     <TableCell>{vehicle.quilometragem ? vehicle.quilometragem.toLocaleString('pt-BR') : '0'} km</TableCell>
                                                     <TableCell>
