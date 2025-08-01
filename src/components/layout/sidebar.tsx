@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -11,6 +12,7 @@ import {
   Users,
   LogOut,
   TowerControl,
+  FileText,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -34,6 +36,7 @@ const menuItems = [
   { href: '/technicians', label: 'Técnicos', icon: Users },
   { href: '/expenses', label: 'Despesas', icon: DollarSign },
   { href: '/schedule', label: 'Expediente', icon: Calendar },
+  { href: '/reports', label: 'Relatórios', icon: FileText },
   { href: '/status', label: 'Status do App', icon: Package },
 ];
 
