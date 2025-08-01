@@ -31,6 +31,7 @@ import { Skeleton } from '../ui/skeleton';
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Gauge },
   { href: '/vehicles', label: 'Veículos', icon: Car },
+  { href: '/technicians', label: 'Técnicos', icon: Users },
   { href: '/expenses', label: 'Despesas', icon: DollarSign },
   { href: '/schedule', label: 'Expediente', icon: Calendar },
   { href: '/status', label: 'Status do App', icon: Package },
@@ -58,7 +59,8 @@ export function AppSidebar() {
   
   const getInitials = (email?: string) => {
     if (!email) return 'AD';
-    return email.substring(0, 2).toUpperCase();
+    const name = user?.user_metadata.full_name || email;
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   }
 
   return (
