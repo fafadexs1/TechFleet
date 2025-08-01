@@ -307,7 +307,6 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                                         alt={`Comprovante para ${record.registro_motivo}`}
                                         fill
                                         style={{ objectFit: 'contain' }}
-                                        data-ai-hint="receipt"
                                       />
                                     </div>
                                   </DialogContent>
