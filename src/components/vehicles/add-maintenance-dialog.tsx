@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,7 +27,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, CalendarIcon, Wrench } from 'lucide-react';
+import { AlertCircle, Wrench } from 'lucide-react';
 import type { Vehicle } from '@/types';
 import { Textarea } from '../ui/textarea';
 
@@ -57,6 +57,16 @@ export function AddMaintenanceDialog({ vehicle, onMaintenanceAdded, open, onOpen
       observacao: '',
     },
   });
+
+  useEffect(() => {
+    if (!open) {
+      form.reset({
+        ultima_manutencao: vehicle.quilometragem || 0,
+        proxima_manutencao: (vehicle.quilometragem || 0) + 10000,
+        observacao: ''
+      });
+    }
+  }, [open, form, vehicle]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -105,24 +115,10 @@ export function AddMaintenanceDialog({ vehicle, onMaintenanceAdded, open, onOpen
       description: `A manutenção para o veículo ${vehicle.placa} foi registrada com sucesso.`,
     });
     onMaintenanceAdded();
-    form.reset({
-      ultima_manutencao: vehicle.quilometragem,
-      proxima_manutencao: vehicle.quilometragem + 10000,
-      observacao: ''
-    });
   }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-        onOpenChange(isOpen);
-        if (!isOpen) {
-            form.reset({
-                ultima_manutencao: vehicle.quilometragem,
-                proxima_manutencao: vehicle.quilometragem + 10000,
-                observacao: ''
-            });
-        }
-    }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogTrigger asChild>
              <Button variant="outline">
                 <Wrench className="mr-2 h-4 w-4" />
@@ -188,7 +184,7 @@ export function AddMaintenanceDialog({ vehicle, onMaintenanceAdded, open, onOpen
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Erro</AlertTitle>
                         <AlertDescription>{formError}</AlertDescription>
-                    </Aler>
+                    </Alert>
                 )}
                 
                 <DialogFooter>
