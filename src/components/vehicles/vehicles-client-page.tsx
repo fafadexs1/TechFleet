@@ -12,7 +12,7 @@ import type { Vehicle, Technician } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { VehicleHistorySheet } from '@/components/vehicles/vehicle-history-sheet';
 import { AddVehicleSheet } from '@/components/vehicles/add-vehicle-sheet';
 import { Input } from '@/components/ui/input';
