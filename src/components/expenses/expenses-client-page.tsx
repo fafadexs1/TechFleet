@@ -154,6 +154,10 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
         setLoadingPayment(null);
         return;
     }
+    
+    const receiptUrls = recordsToUpdate
+      .map(r => r.comprovante_gasolina)
+      .filter((url): url is string => !!url);
 
     const { error: paymentError } = await supabase
       .from('pagamentos')
@@ -164,6 +168,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
             pagamentofeito: true,
             tecnico: firstRecord.tecnicoresponsavel,
             created_at: new Date().toISOString(),
+            comprovantes_abastecimentos: receiptUrls.length > 0 ? receiptUrls : null,
        } as Payment);
 
     if (paymentError) {
