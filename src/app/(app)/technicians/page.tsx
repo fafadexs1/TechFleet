@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase/client';
 import type { Technician } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Ban, Users, MoreVertical } from 'lucide-react';
+import { AlertCircle, Ban, Users, MoreVertical, PlusCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,8 +38,9 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { TechnicianHistorySheet } from '@/components/technicians/technician-history-sheet';
+import { AddTechnicianSheet } from '@/components/technicians/add-technician-sheet';
 
 function getInitials(name: string) {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -51,6 +52,7 @@ export default function TechniciansPage() {
     const [error, setError] = useState<string | null>(null);
     const [banReason, setBanReason] = useState('');
     const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
+    const [isAddTechnicianSheetOpen, setAddTechnicianSheetOpen] = useState(false);
     const { toast } = useToast();
 
     const fetchTechnicians = async () => {
@@ -116,6 +118,11 @@ export default function TechniciansPage() {
             fetchTechnicians(); // Refresh list
         }
     };
+    
+    const handleTechnicianAdded = () => {
+        fetchTechnicians();
+        setAddTechnicianSheetOpen(false);
+    }
 
 
     const TechnicianRowSkeleton = () => (
@@ -142,7 +149,26 @@ export default function TechniciansPage() {
     return (
         <Sheet onOpenChange={(isOpen) => !isOpen && setSelectedTechnician(null)}>
             <div className="flex flex-col gap-6">
-                <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Users/> Técnicos</h1>
+                <div className="flex items-center justify-between">
+                    <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Users/> Técnicos</h1>
+                    <Sheet open={isAddTechnicianSheetOpen} onOpenChange={setAddTechnicianSheetOpen}>
+                        <SheetTrigger asChild>
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Adicionar Técnico
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent className="w-full sm:max-w-md">
+                             <SheetHeader>
+                                <SheetTitle>Adicionar Novo Técnico</SheetTitle>
+                                <SheetDescription>
+                                    Crie um novo usuário e adicione seus detalhes. Um e-mail de confirmação será enviado.
+                                </SheetDescription>
+                            </SheetHeader>
+                            <AddTechnicianSheet onTechnicianAdded={handleTechnicianAdded} />
+                        </SheetContent>
+                    </Sheet>
+                </div>
                 <Card>
                     <CardHeader>
                         <CardTitle>Equipe de Técnicos</CardTitle>
@@ -287,3 +313,5 @@ export default function TechniciansPage() {
         </Sheet>
     );
 }
+
+    

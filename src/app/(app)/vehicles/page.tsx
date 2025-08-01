@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { User, AlertCircle, Car, Mail, Phone } from 'lucide-react';
+import { User, AlertCircle, Car, Mail, Phone, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase/client';
@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { VehicleHistorySheet } from '@/components/vehicles/vehicle-history-sheet';
+import { AddVehicleSheet } from '@/components/vehicles/add-vehicle-sheet';
 import { useMounted } from '@/hooks/use-mounted';
 
 
@@ -46,42 +47,49 @@ export default function VehiclesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+    const [isAddVehicleSheetOpen, setAddVehicleSheetOpen] = useState(false);
     const isMounted = useMounted();
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            setError(null);
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null);
 
-            const { data: vehiclesData, error: vehiclesError } = await supabase
-                .from('carros')
-                .select('*')
-                .order('marca', { ascending: true });
+        const { data: vehiclesData, error: vehiclesError } = await supabase
+            .from('carros')
+            .select('*')
+            .order('marca', { ascending: true });
 
-            if (vehiclesError) {
-                console.error('Error fetching vehicles:', vehiclesError);
-                setError('Não foi possível carregar os dados dos veículos. Tente novamente mais tarde.');
-                setLoading(false);
-                return;
-            }
-
-            const { data: techsData, error: techsError } = await supabase
-                .from('membros')
-                .select('*');
-
-            if (techsError) {
-                 console.error('Error fetching technicians:', techsError);
-                 // Continue even if techs fail, but log it
-            } else {
-                const techMap = new Map(techsData.map(t => [t.uuid, t]));
-                setTechnicians(techMap);
-            }
-
-            setVehicles(vehiclesData as Vehicle[]);
+        if (vehiclesError) {
+            console.error('Error fetching vehicles:', vehiclesError);
+            setError('Não foi possível carregar os dados dos veículos. Tente novamente mais tarde.');
             setLoading(false);
-        };
+            return;
+        }
+
+        const { data: techsData, error: techsError } = await supabase
+            .from('membros')
+            .select('*');
+
+        if (techsError) {
+                console.error('Error fetching technicians:', techsError);
+                // Continue even if techs fail, but log it
+        } else {
+            const techMap = new Map(techsData.map(t => [t.uuid, t]));
+            setTechnicians(techMap);
+        }
+
+        setVehicles(vehiclesData as Vehicle[]);
+        setLoading(false);
+    };
+
+    useEffect(() => {
         fetchData();
     }, []);
+
+    const handleVehicleAdded = () => {
+        fetchData(); // Refetch all data
+        setAddVehicleSheetOpen(false);
+    }
 
     const getMaintenanceStatus = (dateStr?: string) => {
         if (!dateStr) return { label: 'N/D', variant: 'secondary' as const, className: '' };
@@ -130,8 +138,27 @@ export default function VehiclesPage() {
 
     return (
         <Sheet onOpenChange={(isOpen) => !isOpen && setSelectedVehicle(null)}>
-            <div className="flex flex-col gap-6">
-                <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
+             <div className="flex flex-col gap-6">
+                <div className="flex items-center justify-between">
+                    <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
+                    <Sheet open={isAddVehicleSheetOpen} onOpenChange={setAddVehicleSheetOpen}>
+                        <SheetTrigger asChild>
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Adicionar Veículo
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent className="w-full sm:max-w-md">
+                             <SheetHeader>
+                                <SheetTitle>Adicionar Novo Veículo</SheetTitle>
+                                <SheetDescription>
+                                    Preencha os detalhes do novo veículo para adicioná-lo à frota.
+                                </SheetDescription>
+                            </SheetHeader>
+                            <AddVehicleSheet onVehicleAdded={handleVehicleAdded} />
+                        </SheetContent>
+                    </Sheet>
+                </div>
                 <Card>
                     <CardHeader>
                         <CardTitle>Todos os Veículos</CardTitle>
@@ -252,3 +279,5 @@ export default function VehiclesPage() {
         </Sheet>
     );
 }
+
+    
