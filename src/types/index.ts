@@ -11,7 +11,7 @@ export type Vehicle = {
   proxima_manutencao?: number;
   quilometragem: number;
   ultima_manutencao?: number;
-  tecnico_atual?: string;
+  tecnico_atual?: string; // This is a UUID from membros table
   displayname_tecnico: string;
   bindado: boolean;
 };

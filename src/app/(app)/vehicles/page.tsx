@@ -6,14 +6,22 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { User, AlertCircle, Car } from 'lucide-react';
+import { User, AlertCircle, Car, Mail, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase/client';
-import type { Vehicle } from '@/types';
+import type { Vehicle, Technician } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useMounted } from '@/hooks/use-mounted';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+function getInitials(name: string) {
+    if (!name) return '';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+}
 
 const VehicleRowSkeleton = () => (
     <TableRow>
@@ -27,7 +35,6 @@ const VehicleRowSkeleton = () => (
         <TableCell className="text-right"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
     </TableRow>
 );
-
 
 const PageSkeleton = () => (
      <div className="flex flex-col gap-6">
@@ -60,31 +67,46 @@ const PageSkeleton = () => (
     </div>
 );
 
-
 export default function VehiclesPage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [technicians, setTechnicians] = useState<Map<string, Technician>>(new Map());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const isMounted = useMounted();
 
     useEffect(() => {
-        const fetchVehicles = async () => {
+        const fetchData = async () => {
             setLoading(true);
             setError(null);
-            const { data, error } = await supabase
+
+            const { data: vehiclesData, error: vehiclesError } = await supabase
                 .from('carros')
                 .select('*')
                 .order('marca', { ascending: true });
 
-            if (error) {
-                console.error('Error fetching vehicles:', error);
+            if (vehiclesError) {
+                console.error('Error fetching vehicles:', vehiclesError);
                 setError('Não foi possível carregar os dados dos veículos. Tente novamente mais tarde.');
-            } else {
-                setVehicles(data as Vehicle[]);
+                setLoading(false);
+                return;
             }
+
+            const { data: techsData, error: techsError } = await supabase
+                .from('membros')
+                .select('*');
+
+            if (techsError) {
+                 console.error('Error fetching technicians:', techsError);
+                 // Continue even if techs fail, but log it
+            } else {
+                const techMap = new Map(techsData.map(t => [t.uuid, t]));
+                setTechnicians(techMap);
+            }
+
+            setVehicles(vehiclesData as Vehicle[]);
             setLoading(false);
         };
-        fetchVehicles();
+        fetchData();
     }, []);
 
     const getMaintenanceStatus = (dateStr?: string) => {
@@ -98,7 +120,6 @@ export default function VehiclesPage() {
         if (maintenanceDate <= oneMonthFromNow) return { label: 'Próxima', variant: 'default' as const, className: 'bg-accent text-accent-foreground hover:bg-accent/80' };
         return { label: 'Em dia', variant: 'secondary' as const, className: '' };
     };
-
 
     if (!isMounted) {
         return <PageSkeleton />;
@@ -139,6 +160,8 @@ export default function VehiclesPage() {
                             ) : vehicles.length > 0 ? (
                                 vehicles.map((vehicle) => {
                                     const status = getMaintenanceStatus(vehicle.data_proxima_manutencao);
+                                    const technician = vehicle.tecnico_atual ? technicians.get(vehicle.tecnico_atual) : undefined;
+
                                     return (
                                     <TableRow key={vehicle.id}>
                                         <TableCell>
@@ -155,11 +178,40 @@ export default function VehiclesPage() {
                                         <TableCell className="font-medium">{vehicle.marca} {vehicle.modelo}</TableCell>
                                         <TableCell>{vehicle.quilometragem ? vehicle.quilometragem.toLocaleString('pt-BR') : '0'} km</TableCell>
                                         <TableCell>
-                                            {vehicle.tecnico_atual ? (
-                                                <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-muted-foreground" />
-                                                    <span>{vehicle.tecnico_atual}</span>
-                                                </div>
+                                            {technician ? (
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="link" className="p-0 h-auto">
+                                                            <User className="h-4 w-4 mr-2" />
+                                                            {technician.display_name}
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-[425px]">
+                                                        <DialogHeader>
+                                                            <DialogTitle>Detalhes do Técnico</DialogTitle>
+                                                        </DialogHeader>
+                                                        <div className="flex flex-col items-center gap-4 py-4">
+                                                             <Avatar className="h-24 w-24">
+                                                                <AvatarImage src={technician.foto_perfil} alt={technician.display_name} data-ai-hint="person portrait"/>
+                                                                <AvatarFallback>{getInitials(technician.display_name)}</AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="text-center">
+                                                                <p className="text-xl font-bold">{technician.display_name}</p>
+                                                                <p className="text-sm text-muted-foreground">{technician.cargo}</p>
+                                                            </div>
+                                                            <div className="w-full space-y-2 text-sm">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Mail className="h-4 w-4 text-muted-foreground" />
+                                                                    <span>{technician.email}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                                                    <span>{technician.telefone || 'Não informado'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
                                             ) : (
                                                 <Badge variant="outline">Disponível</Badge>
                                             )}
