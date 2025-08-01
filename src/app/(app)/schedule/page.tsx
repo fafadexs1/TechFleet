@@ -160,7 +160,7 @@ export default function SchedulePage() {
                 </h1>
                 <p className="text-muted-foreground">
                     Jornadas de trabalho diárias dos técnicos registradas no aplicativo.
-                p>
+                </p>
             </div>
 
              <Card>
