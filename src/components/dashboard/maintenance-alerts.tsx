@@ -8,35 +8,14 @@ import type { Vehicle } from "@/types";
 import { Wrench } from "lucide-react";
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useMounted } from "@/hooks/use-mounted";
-import { Skeleton } from "../ui/skeleton";
-
 
 export function MaintenanceAlerts({ vehicles }: { vehicles: Vehicle[] }) {
-    const isMounted = useMounted();
 
     const vehiclesNeedingAttention = vehicles
-        .filter(v => v.data_proxima_manutencao)
-        .sort((a, b) => new Date(a.data_proxima_manutencao!).getTime() - new Date(b.data_proxima_manutencao!).getTime())
+        .filter(v => v.proxima_manutencao)
+        .filter(v => v.quilometragem >= (v.proxima_manutencao! - 2000))
+        .sort((a, b) => (a.proxima_manutencao! - a.quilometragem) - (b.proxima_manutencao! - b.quilometragem))
         .slice(0, 5);
-    
-    const MaintenanceAlertsSkeleton = () => (
-         <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                    <Skeleton className="h-10 w-10 rounded-lg" />
-                    <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/4" />
-                    </div>
-                    <div className="text-right space-y-2">
-                       <Skeleton className="h-4 w-20 ml-auto" />
-                       <Skeleton className="h-3 w-16 ml-auto" />
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
 
     return (
         <Card className="col-span-1 lg:col-span-2">
@@ -45,12 +24,16 @@ export function MaintenanceAlerts({ vehicles }: { vehicles: Vehicle[] }) {
                     <Wrench className="h-5 w-5 text-primary"/>
                     Manutenções Próximas
                 </CardTitle>
-                <CardDescription>Veículos que precisam de atenção em breve.</CardDescription>
+                <CardDescription>Veículos que precisam de atenção em breve (por KM).</CardDescription>
             </CardHeader>
             <CardContent>
-                {!isMounted ? <MaintenanceAlertsSkeleton/> : (
-                    <div className="space-y-4">
-                        {vehiclesNeedingAttention.length > 0 ? vehiclesNeedingAttention.map(vehicle => (
+                <div className="space-y-4">
+                    {vehiclesNeedingAttention.length > 0 ? vehiclesNeedingAttention.map(vehicle => {
+                        const kmRemaining = vehicle.proxima_manutencao! - vehicle.quilometragem;
+                        const isOverdue = kmRemaining <= 0;
+                        const kmFormatted = Math.abs(kmRemaining).toLocaleString('pt-BR');
+                        
+                        return (
                             <div key={vehicle.id} className="flex items-center space-x-4">
                                 <Avatar className="h-10 w-10 rounded-lg">
                                     <AvatarImage src={vehicle.foto_carro} alt={vehicle.modelo} data-ai-hint="car side" className="rounded-lg"/>
@@ -61,19 +44,21 @@ export function MaintenanceAlerts({ vehicles }: { vehicles: Vehicle[] }) {
                                     <p className="text-sm text-muted-foreground">{vehicle.placa}</p>
                                 </div>
                                 <div className="text-right">
-                                    <Badge variant={new Date(vehicle.data_proxima_manutencao!) < new Date() ? 'destructive' : 'default'} className={new Date(vehicle.data_proxima_manutencao!) < new Date() ? '' : 'bg-accent text-accent-foreground hover:bg-accent/80'}>
-                                        {formatDistanceToNow(parseISO(vehicle.data_proxima_manutencao!), { addSuffix: true, locale: ptBR })}
+                                    <Badge variant={isOverdue ? 'destructive' : 'default'} className={!isOverdue ? 'bg-accent text-accent-foreground hover:bg-accent/80' : ''}>
+                                        {isOverdue ? `Atrasada (${kmFormatted} km)` : `Em ${kmFormatted} km`}
                                     </Badge>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {new Date(vehicle.data_proxima_manutencao!).toLocaleDateString('pt-BR')}
-                                    </p>
+                                    {vehicle.data_proxima_manutencao && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {formatDistanceToNow(parseISO(vehicle.data_proxima_manutencao), { addSuffix: true, locale: ptBR })}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
-                        )) : (
-                            <p className="text-sm text-muted-foreground text-center py-4">Nenhum veículo com manutenção próxima.</p>
-                        )}
-                    </div>
-                )}
+                        )
+                    }) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">Nenhum veículo com manutenção próxima.</p>
+                    )}
+                </div>
             </CardContent>
         </Card>
     );

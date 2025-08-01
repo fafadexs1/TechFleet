@@ -1,3 +1,5 @@
+
+'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { RecentActivity, Technician } from "@/types";
