@@ -74,9 +74,8 @@ export function AppSidebar() {
     await supabase.auth.signOut();
   };
   
-  const getInitials = (email?: string) => {
-    if (!email) return 'AD';
-    const name = user?.user_metadata.full_name || email;
+  const getInitials = (name?: string) => {
+    if (!name) return 'AD';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   }
 
@@ -124,12 +123,12 @@ export function AppSidebar() {
             ) : (
                 <>
                     <Avatar className="h-10 w-10">
-                        <AvatarImage src={user?.user_metadata.avatar_url} alt={user?.user_metadata.full_name || 'Admin'} data-ai-hint="person portrait" />
-                        <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
+                        <AvatarImage src={technician?.foto_perfil} alt={technician?.display_name || 'Admin'} data-ai-hint="person portrait" />
+                        <AvatarFallback>{getInitials(technician?.display_name)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                        <p className="font-bold text-sm text-sidebar-foreground">{user?.user_metadata.full_name || 'Admin'}</p>
-                        <p className="text-xs text-sidebar-foreground/70">{technician?.cargo || user?.email}</p>
+                        <p className="font-bold text-sm text-sidebar-foreground">{technician?.display_name || 'Admin'}</p>
+                        <p className="text-xs text-sidebar-foreground/70">{technician?.cargo || 'Cargo não definido'}</p>
                     </div>
                     <Button variant="ghost" size="icon" asChild onClick={handleLogout} className="text-sidebar-foreground/70 hover:bg-sidebar-accent/20 hover:text-sidebar-foreground">
                         <Link href="/">
