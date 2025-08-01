@@ -30,6 +30,8 @@ export type Technician = {
   foto_perfil: string;
   ativo: boolean;
   aprovado: boolean;
+  ban?: boolean;
+  ban_motivo?: string;
 };
 
 // Based on public.registros
