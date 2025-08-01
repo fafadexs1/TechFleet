@@ -13,10 +13,12 @@ import { supabase } from '@/lib/supabase/client';
 import type { Vehicle, Technician } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useMounted } from '@/hooks/use-mounted';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { VehicleHistorySheet } from '@/components/vehicles/vehicle-history-sheet';
+
 
 function getInitials(name: string) {
     if (!name) return '';
@@ -36,43 +38,13 @@ const VehicleRowSkeleton = () => (
     </TableRow>
 );
 
-const PageSkeleton = () => (
-     <div className="flex flex-col gap-6">
-        <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
-        <Card>
-            <CardHeader>
-                <CardTitle>Todos os Veículos</CardTitle>
-                <CardDescription>Lista completa de veículos da frota e seus status.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                     <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[80px]">Foto</TableHead>
-                            <TableHead>Placa</TableHead>
-                            <TableHead>Marca/Modelo</TableHead>
-                            <TableHead>Quilometragem</TableHead>
-                            <TableHead>Técnico</TableHead>
-                            <TableHead>Última Manut.</TableHead>
-                            <TableHead>Próxima Manut.</TableHead>
-                            <TableHead className="text-right">Status</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {Array.from({ length: 5 }).map((_, i) => <VehicleRowSkeleton key={i} />)}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-    </div>
-);
 
 export default function VehiclesPage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [technicians, setTechnicians] = useState<Map<string, Technician>>(new Map());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const isMounted = useMounted();
+    const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -121,123 +93,127 @@ export default function VehiclesPage() {
         return { label: 'Em dia', variant: 'secondary' as const, className: '' };
     };
 
-    if (!isMounted) {
-        return <PageSkeleton />;
-    }
-
     return (
-        <div className="flex flex-col gap-6">
-            <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Todos os Veículos</CardTitle>
-                    <CardDescription>Lista completa de veículos da frota e seus status.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     {error && (
-                         <Alert variant="destructive" className="mb-4">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Erro ao Carregar</AlertTitle>
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    )}
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[80px]">Foto</TableHead>
-                                <TableHead>Placa</TableHead>
-                                <TableHead>Marca/Modelo</TableHead>
-                                <TableHead>Quilometragem</TableHead>
-                                <TableHead>Técnico</TableHead>
-                                <TableHead>Última Manut.</TableHead>
-                                <TableHead>Próxima Manut.</TableHead>
-                                <TableHead className="text-right">Status</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
-                                Array.from({ length: 5 }).map((_, i) => <VehicleRowSkeleton key={i} />)
-                            ) : vehicles.length > 0 ? (
-                                vehicles.map((vehicle) => {
-                                    const status = getMaintenanceStatus(vehicle.data_proxima_manutencao);
-                                    const technician = vehicle.tecnico_atual ? technicians.get(vehicle.tecnico_atual) : undefined;
+        <Sheet onOpenChange={(isOpen) => !isOpen && setSelectedVehicle(null)}>
+            <div className="flex flex-col gap-6">
+                <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Todos os Veículos</CardTitle>
+                        <CardDescription>Lista completa de veículos da frota e seus status. Clique em um veículo para ver seu histórico.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {error && (
+                            <Alert variant="destructive" className="mb-4">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Erro ao Carregar</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[80px]">Foto</TableHead>
+                                    <TableHead>Placa</TableHead>
+                                    <TableHead>Marca/Modelo</TableHead>
+                                    <TableHead>Quilometragem</TableHead>
+                                    <TableHead>Técnico</TableHead>
+                                    <TableHead>Última Manut.</TableHead>
+                                    <TableHead>Próxima Manut.</TableHead>
+                                    <TableHead className="text-right">Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {loading ? (
+                                    Array.from({ length: 5 }).map((_, i) => <VehicleRowSkeleton key={i} />)
+                                ) : vehicles.length > 0 ? (
+                                    vehicles.map((vehicle) => {
+                                        const status = getMaintenanceStatus(vehicle.data_proxima_manutencao);
+                                        const technician = vehicle.tecnico_atual ? technicians.get(vehicle.tecnico_atual) : undefined;
 
-                                    return (
-                                    <TableRow key={vehicle.id}>
-                                        <TableCell>
-                                            <Image
-                                                src={vehicle.foto_carro || 'https://placehold.co/80x80.png'}
-                                                alt={vehicle.modelo || 'Veículo'}
-                                                width={64}
-                                                height={64}
-                                                className="rounded-md object-cover"
-                                                data-ai-hint="pickup truck"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="font-mono">{vehicle.placa || 'N/A'}</TableCell>
-                                        <TableCell className="font-medium">{vehicle.marca} {vehicle.modelo}</TableCell>
-                                        <TableCell>{vehicle.quilometragem ? vehicle.quilometragem.toLocaleString('pt-BR') : '0'} km</TableCell>
-                                        <TableCell>
-                                            {technician ? (
-                                                <Dialog>
-                                                    <DialogTrigger asChild>
-                                                        <Button variant="link" className="p-0 h-auto">
-                                                            <User className="h-4 w-4 mr-2" />
-                                                            {technician.display_name}
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent className="sm:max-w-[425px]">
-                                                        <DialogHeader>
-                                                            <DialogTitle>Detalhes do Técnico</DialogTitle>
-                                                        </DialogHeader>
-                                                        <div className="flex flex-col items-center gap-4 py-4">
-                                                             <Avatar className="h-24 w-24">
-                                                                <AvatarImage src={technician.foto_perfil} alt={technician.display_name} data-ai-hint="person portrait"/>
-                                                                <AvatarFallback>{getInitials(technician.display_name)}</AvatarFallback>
-                                                            </Avatar>
-                                                            <div className="text-center">
-                                                                <p className="text-xl font-bold">{technician.display_name}</p>
-                                                                <p className="text-sm text-muted-foreground">{technician.cargo}</p>
-                                                            </div>
-                                                            <div className="w-full space-y-2 text-sm">
-                                                                <div className="flex items-center gap-2">
-                                                                    <Mail className="h-4 w-4 text-muted-foreground" />
-                                                                    <span>{technician.email}</span>
+                                        return (
+                                        <SheetTrigger asChild key={vehicle.id}>
+                                            <TableRow onClick={() => setSelectedVehicle(vehicle)} className="cursor-pointer">
+                                                <TableCell>
+                                                    <Image
+                                                        src={vehicle.foto_carro || 'https://placehold.co/80x80.png'}
+                                                        alt={vehicle.modelo || 'Veículo'}
+                                                        width={64}
+                                                        height={64}
+                                                        className="rounded-md object-cover"
+                                                        data-ai-hint="pickup truck"
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="font-mono">{vehicle.placa || 'N/A'}</TableCell>
+                                                <TableCell className="font-medium">{vehicle.marca} {vehicle.modelo}</TableCell>
+                                                <TableCell>{vehicle.quilometragem ? vehicle.quilometragem.toLocaleString('pt-BR') : '0'} km</TableCell>
+                                                <TableCell>
+                                                    {technician ? (
+                                                        <Dialog>
+                                                            <DialogTrigger asChild>
+                                                                <Button variant="link" className="p-0 h-auto" onClick={(e) => e.stopPropagation()}>
+                                                                    <User className="h-4 w-4 mr-2" />
+                                                                    {technician.display_name}
+                                                                </Button>
+                                                            </DialogTrigger>
+                                                            <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
+                                                                <DialogHeader>
+                                                                    <DialogTitle>Detalhes do Técnico</DialogTitle>
+                                                                </DialogHeader>
+                                                                <div className="flex flex-col items-center gap-4 py-4">
+                                                                    <Avatar className="h-24 w-24">
+                                                                        <AvatarImage src={technician.foto_perfil} alt={technician.display_name} data-ai-hint="person portrait"/>
+                                                                        <AvatarFallback>{getInitials(technician.display_name)}</AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="text-center">
+                                                                        <p className="text-xl font-bold">{technician.display_name}</p>
+                                                                        <p className="text-sm text-muted-foreground">{technician.cargo}</p>
+                                                                    </div>
+                                                                    <div className="w-full space-y-2 text-sm">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Mail className="h-4 w-4 text-muted-foreground" />
+                                                                            <span>{technician.email}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Phone className="h-4 w-4 text-muted-foreground" />
+                                                                            <span>{technician.telefone || 'Não informado'}</span>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <Phone className="h-4 w-4 text-muted-foreground" />
-                                                                    <span>{technician.telefone || 'Não informado'}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            ) : (
-                                                <Badge variant="outline">Disponível</Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            {vehicle.data_ultima_manutencao ? format(new Date(vehicle.data_ultima_manutencao), 'dd/MM/yy', { locale: ptBR }) : 'N/A'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {vehicle.data_proxima_manutencao ? format(new Date(vehicle.data_proxima_manutencao), 'dd/MM/yy', { locale: ptBR }) : 'N/A'}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                                                            </DialogContent>
+                                                        </Dialog>
+                                                    ) : (
+                                                        <Badge variant="outline">Disponível</Badge>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {vehicle.data_ultima_manutencao ? format(new Date(vehicle.data_ultima_manutencao), 'dd/MM/yy', { locale: ptBR }) : 'N/A'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {vehicle.data_proxima_manutencao ? format(new Date(vehicle.data_proxima_manutencao), 'dd/MM/yy', { locale: ptBR }) : 'N/A'}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        </SheetTrigger>
+                                    )})
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-24 text-center">
+                                            Nenhum veículo encontrado.
                                         </TableCell>
                                     </TableRow>
-                                )})
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="h-24 text-center">
-                                        Nenhum veículo encontrado.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </div>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
+            
+            <SheetContent className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto">
+                 {selectedVehicle && <VehicleHistorySheet vehicle={selectedVehicle} />}
+            </SheetContent>
+        </Sheet>
     );
 }
