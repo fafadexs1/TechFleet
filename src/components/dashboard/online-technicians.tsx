@@ -9,6 +9,7 @@ import { formatDistanceToNowStrict } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { UserCheck } from "lucide-react"
 import { Skeleton } from '../ui/skeleton';
+import { useMounted } from '@/hooks/use-mounted';
 
 interface OnlineTechniciansProps {
     records: Pick<DailyRecord, 'id' | 'tecnico_nome' | 'placa_carro' | 'inicio_expediente'>[];
@@ -17,14 +18,15 @@ interface OnlineTechniciansProps {
 
 const TimeSince = ({ date }: { date: string | undefined }) => {
     const [timeString, setTimeString] = useState<string | null>(null);
+    const mounted = useMounted();
   
     useEffect(() => {
-        if (date) {
+        if (date && mounted) {
             setTimeString(formatDistanceToNowStrict(new Date(date), { locale: ptBR, addSuffix: true }));
         }
-    }, [date]);
+    }, [date, mounted]);
   
-    if (!timeString) {
+    if (!mounted || !timeString) {
       return <Skeleton className="h-4 w-[100px]" />;
     }
   
