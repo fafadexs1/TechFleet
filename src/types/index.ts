@@ -1,4 +1,5 @@
 
+
 // Based on public.carros
 export type Vehicle = {
   id: number;
@@ -73,6 +74,7 @@ export type DailyRecord = {
   comprovante_gasolina?: string;
   observacao?: string;
   tecnicoresponsavel?: string | null;
+  pago?: boolean;
 };
 
 // Based on public.atividades_recentes
