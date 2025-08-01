@@ -9,8 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, DollarSign, Wallet, Filter, TrendingUp, Car, PlusCircle, Paperclip, CheckCircle } from 'lucide-react';
+import { Wallet, Filter, TrendingUp, Car, PlusCircle, Paperclip, CheckCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -19,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ConfirmPaymentDialog } from './confirm-payment-dialog';
 
 type GroupedExpenses = {
   [date: string]: {
@@ -50,7 +50,6 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
   const [allExpenses, setAllExpenses] = useState<DailyRecord[]>(initialExpenses);
   const [technicians, setTechnicians] = useState<Technician[]>(initialTechnicians);
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehles);
-  const [loadingPayment, setLoadingPayment] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -142,67 +141,11 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
     setAddSheetOpen(false);
   }
 
-  const handleConfirmPayment = async (date: string) => {
-    setLoadingPayment(date);
-    const dayData = groupedExpenses[date];
-    const recordsToUpdate = dayData.records.filter(r => !r.pago);
-    const recordIdsToUpdate = recordsToUpdate.map(r => r.id);
+  const handlePaymentConfirmed = () => {
+    toast({ title: "Pagamento Confirmado!", description: `As despesas foram marcadas como pagas.`});
+    fetchData();
+  }
 
-    if (recordsToUpdate.length === 0) {
-        toast({ title: "Nenhuma despesa para pagar", variant: "destructive"});
-        setLoadingPayment(null);
-        return;
-    }
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        toast({ title: "Erro de autenticação", description: "Usuário não encontrado. Faça login novamente.", variant: "destructive"});
-        setLoadingPayment(null);
-        return;
-    }
-
-    const receiptUrls = recordsToUpdate
-      .map(r => r.comprovante_gasolina)
-      .filter((url): url is string => !!url);
-    
-    const expenseValues = recordsToUpdate
-        .map(r => r.gasto)
-        .filter((gasto): gasto is number => gasto !== null && gasto !== undefined);
-
-    const { error: paymentError } = await supabase
-      .from('pagamentos')
-      .insert({ 
-            motivo: 'Abastecimento',
-            nomepagamento: `Despesas do dia ${format(parseISO(date), 'dd/MM/yyyy')}`,
-            valorapagar: dayData.total,
-            pagamentofeito: true,
-            tecnico: user.id,
-            created_at: new Date().toISOString(),
-            comprovantes_abastecimentos: receiptUrls.length > 0 ? receiptUrls : null,
-            valores_abastecidos: expenseValues,
-       });
-
-    if (paymentError) {
-        toast({ title: "Erro ao registrar pagamento", description: paymentError.message, variant: "destructive" });
-        setLoadingPayment(null);
-        return;
-    }
-
-    const { error: updateError } = await supabase
-        .from('registros')
-        .update({ pago: true })
-        .in('id', recordIdsToUpdate);
-    
-    if (updateError) {
-        toast({ title: "Erro ao atualizar despesas", description: updateError.message, variant: "destructive" });
-        // Here you might want to handle the fact that the payment was created but expenses were not updated.
-    } else {
-        toast({ title: "Pagamento Confirmado!", description: `As despesas do dia ${format(parseISO(date), 'dd/MM/yyyy')} foram marcadas como pagas.`});
-        fetchData();
-    }
-
-    setLoadingPayment(null);
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -295,7 +238,6 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
         <Accordion type="multiple" defaultValue={defaultOpenAccordion} className="w-full space-y-4">
           {sortedDates.map((date) => {
             const dayData = groupedExpenses[date];
-            const isLoading = loadingPayment === date;
             return (
               <AccordionItem value={date} key={date} className="border-none">
                 <Card>
@@ -378,10 +320,11 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                     </Table>
                     {!dayData.isPaid && (
                         <div className="mt-4 flex justify-end">
-                            <Button onClick={() => handleConfirmPayment(date)} disabled={isLoading}>
-                                <CheckCircle className="mr-2 h-4 w-4"/>
-                                {isLoading ? 'Processando...' : 'Confirmar Pagamento do Dia'}
-                            </Button>
+                            <ConfirmPaymentDialog 
+                                dayData={dayData}
+                                date={date}
+                                onPaymentConfirmed={handlePaymentConfirmed}
+                            />
                         </div>
                     )}
                   </AccordionContent>
@@ -394,3 +337,5 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
     </div>
   );
 }
+
+    
