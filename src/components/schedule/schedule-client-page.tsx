@@ -99,8 +99,8 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
                         <h3 className="font-semibold text-lg">Filtros</h3>
                     </div>
                 </CardHeader>
-                <CardContent className="flex gap-4">
-                    <div className="flex flex-col gap-2 w-[180px]">
+                <CardContent className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex flex-col gap-2 flex-grow">
                         <label className="text-sm font-medium">Mês</label>
                         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                             <SelectTrigger>
@@ -115,7 +115,7 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="flex flex-col gap-2 w-[120px]">
+                    <div className="flex flex-col gap-2 sm:w-[120px]">
                         <label className="text-sm font-medium">Ano</label>
                         <Select value={selectedYear} onValueChange={setSelectedYear}>
                             <SelectTrigger>
@@ -137,33 +137,35 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
                          <AccordionItem value={date} key={date} className="border-none">
                              <Card>
                                 <AccordionTrigger className="p-6 hover:no-underline">
-                                    <h2 className="font-headline text-xl font-semibold">
+                                    <h2 className="font-headline text-xl font-semibold text-left">
                                         {format(parseISO(`${date}T12:00:00Z`), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                                     </h2>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-6 pb-6">
-                                     <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Técnico</TableHead>
-                                                <TableHead>Veículo</TableHead>
-                                                <TableHead>Início</TableHead>
-                                                <TableHead>Fim</TableHead>
-                                                <TableHead className="text-right">Duração</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {groupedRecords[date].map((record) => (
-                                                <TableRow key={record.id}>
-                                                    <TableCell className="font-medium">{record.tecnico_nome}</TableCell>
-                                                    <TableCell>{record.placa_carro || 'N/D'}</TableCell>
-                                                    <TableCell>{formatDate(record.inicio_expediente, 'HH:mm')}</TableCell>
-                                                    <TableCell>{formatDate(record.final_expediente, 'HH:mm')}</TableCell>
-                                                    <TableCell className="text-right">{getDuration(record.inicio_expediente, record.final_expediente)}</TableCell>
+                                     <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Técnico</TableHead>
+                                                    <TableHead>Veículo</TableHead>
+                                                    <TableHead>Início</TableHead>
+                                                    <TableHead>Fim</TableHead>
+                                                    <TableHead className="text-right">Duração</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {groupedRecords[date].map((record) => (
+                                                    <TableRow key={record.id}>
+                                                        <TableCell className="font-medium">{record.tecnico_nome}</TableCell>
+                                                        <TableCell>{record.placa_carro || 'N/D'}</TableCell>
+                                                        <TableCell>{formatDate(record.inicio_expediente, 'HH:mm')}</TableCell>
+                                                        <TableCell>{formatDate(record.final_expediente, 'HH:mm')}</TableCell>
+                                                        <TableCell className="text-right">{getDuration(record.inicio_expediente, record.final_expediente)}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                     </div>
                                 </AccordionContent>
                              </Card>
                          </AccordionItem>

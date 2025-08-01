@@ -8,7 +8,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-4">
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-4 md:justify-end">
             <SidebarTrigger className="md:hidden"/>
         </header>
         <main className="flex-1 p-4 sm:px-6 sm:py-0">{children}</main>

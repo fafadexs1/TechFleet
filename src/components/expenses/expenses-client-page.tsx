@@ -174,8 +174,8 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                     <h3 className="font-semibold text-lg">Filtros</h3>
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-wrap gap-4">
-                <div className="flex flex-col gap-2 flex-grow sm:flex-grow-0 sm:w-[180px]">
+            <CardContent className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col gap-2 flex-grow">
                     <label className="text-sm font-medium">Mês</label>
                     <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                         <SelectTrigger>
@@ -190,7 +190,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="flex flex-col gap-2 flex-grow sm:flex-grow-0 sm:w-[120px]">
+                <div className="flex flex-col gap-2 flex-grow">
                     <label className="text-sm font-medium">Ano</label>
                     <Select value={selectedYear} onValueChange={setSelectedYear}>
                         <SelectTrigger>
@@ -236,7 +236,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
               <AccordionItem value={date} key={date} className="border-none">
                 <Card>
                   <AccordionTrigger className="p-6 hover:no-underline">
-                    <div className="flex justify-between items-center w-full">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-4 sm:gap-2">
                       <div className="text-left">
                         <h2 className="font-headline text-xl font-semibold">
                           {format(parseISO(`${date}T12:00:00Z`), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
@@ -245,7 +245,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                           {dayData.records.length} {dayData.records.length === 1 ? 'registro' : 'registros'} de despesa
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right">
                         <p className="font-bold text-lg">
                           R$ {dayData.total.toFixed(2).replace('.', ',')}
                         </p>
@@ -256,61 +256,63 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Hora</TableHead>
-                          <TableHead>Motivo</TableHead>
-                          <TableHead>Técnico</TableHead>
-                          <TableHead>Placa</TableHead>
-                          <TableHead className="text-right">Valor</TableHead>
-                          <TableHead className="text-center">Status</TableHead>
-                          <TableHead className="text-right">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {dayData.records.map((record) => (
-                          <TableRow key={record.id}>
-                            <TableCell>{format(parseISO(record.datahora), 'HH:mm')}</TableCell>
-                            <TableCell className="font-medium">{record.registro_motivo}</TableCell>
-                            <TableCell>{technicianMap.get(record.tecnicoresponsavel!)?.display_name || record.tecnico_nome}</TableCell>
-                            <TableCell>{record.placa_carro}</TableCell>
-                            <TableCell className="text-right font-mono">
-                              R$ {record.gasto?.toFixed(2).replace('.', ',')}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant={record.pago ? 'secondary' : 'outline'}>
-                                {record.pago ? 'Pago' : 'Pendente'}
-                              </Badge>
-                            </TableCell>
-                             <TableCell className="text-right">
-                              {record.comprovante_gasolina && (
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <Paperclip className="h-4 w-4" />
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-3xl">
-                                    <DialogHeader>
-                                      <DialogTitle>Comprovante de Despesa</DialogTitle>
-                                    </DialogHeader>
-                                    <div className="relative h-[80vh] w-full">
-                                      <Image
-                                        src={record.comprovante_gasolina}
-                                        alt={`Comprovante para ${record.registro_motivo}`}
-                                        fill
-                                        style={{ objectFit: 'contain' }}
-                                      />
-                                    </div>
-                                  </DialogContent>
-                                </Dialog>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <div className="overflow-x-auto">
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Hora</TableHead>
+                            <TableHead>Motivo</TableHead>
+                            <TableHead>Técnico</TableHead>
+                            <TableHead>Placa</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                            <TableHead className="text-center">Status</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {dayData.records.map((record) => (
+                            <TableRow key={record.id}>
+                                <TableCell>{format(parseISO(record.datahora), 'HH:mm')}</TableCell>
+                                <TableCell className="font-medium">{record.registro_motivo}</TableCell>
+                                <TableCell>{technicianMap.get(record.tecnicoresponsavel!)?.display_name || record.tecnico_nome}</TableCell>
+                                <TableCell>{record.placa_carro}</TableCell>
+                                <TableCell className="text-right font-mono">
+                                R$ {record.gasto?.toFixed(2).replace('.', ',')}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                <Badge variant={record.pago ? 'secondary' : 'outline'}>
+                                    {record.pago ? 'Pago' : 'Pendente'}
+                                </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                {record.comprovante_gasolina && (
+                                    <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                        <Paperclip className="h-4 w-4" />
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="max-w-3xl">
+                                        <DialogHeader>
+                                        <DialogTitle>Comprovante de Despesa</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="relative h-[80vh] w-full">
+                                        <Image
+                                            src={record.comprovante_gasolina}
+                                            alt={`Comprovante para ${record.registro_motivo}`}
+                                            fill
+                                            style={{ objectFit: 'contain' }}
+                                        />
+                                        </div>
+                                    </DialogContent>
+                                    </Dialog>
+                                )}
+                                </TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    </div>
                     {!dayData.isPaid && (
                         <div className="mt-4 flex justify-end">
                             <ConfirmPaymentDialog 
