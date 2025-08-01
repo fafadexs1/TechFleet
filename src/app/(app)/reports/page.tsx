@@ -66,7 +66,7 @@ export default function ReportsPage() {
 
         let query = supabase
             .from('registros')
-            .select('*')
+            .select('*, tecnico_nome, tecnicoresponsavel, placa_carro, registro_motivo, datahora, km_inicial, km_final, gasto, local_de_abastecimento')
             .gte('datahora', fromDate.toISOString())
             .lte('datahora', toDate.toISOString())
             .in('registro_motivo', ['Expediente', 'Abastecimento'])
@@ -136,7 +136,7 @@ export default function ReportsPage() {
                 if(record.registro_motivo === 'Expediente' && record.km_final && record.km_inicial) {
                     acc.totalKm += (record.km_final - record.km_inicial);
                     acc.workDays.add(format(new Date(record.datahora), 'yyyy-MM-dd'));
-                    acc.cars.add(record.placa_carro);
+                    if (record.placa_carro) acc.cars.add(record.placa_carro);
                 }
                 if(record.registro_motivo === 'Abastecimento' && record.gasto) {
                     acc.totalSpent += record.gasto;
@@ -147,6 +147,7 @@ export default function ReportsPage() {
             doc.setLineWidth(0.5);
             doc.line(14, 50, 196, 50);
             doc.setFontSize(14);
+            doc.setTextColor(0, 0, 0);
             doc.text('Resumo do Mês', 14, 58);
 
             const summaryText = `
@@ -167,7 +168,7 @@ export default function ReportsPage() {
                     const distance = r.km_final && r.km_inicial ? `${r.km_final - r.km_inicial} km` : 'N/D';
                     description = `Expediente com ${r.placa_carro}. Distância: ${distance}`;
                 } else if (r.registro_motivo === 'Abastecimento') {
-                    description = `Abastecimento de R$ ${r.gasto?.toFixed(2).replace('.', ',')} em ${r.local_de_abastecimento}`;
+                    description = `Abastecimento de R$ ${r.gasto?.toFixed(2).replace('.', ',') || '0,00'} em ${r.local_de_abastecimento || 'local não informado'}`;
                 }
                 return [date, description];
             });
