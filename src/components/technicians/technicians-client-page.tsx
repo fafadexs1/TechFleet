@@ -36,7 +36,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { TechnicianHistorySheet } from '@/components/technicians/technician-history-sheet';
 import { AddTechnicianSheet } from '@/components/technicians/add-technician-sheet';
 
