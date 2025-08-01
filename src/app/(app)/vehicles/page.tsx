@@ -15,6 +15,52 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useMounted } from '@/hooks/use-mounted';
 
+const VehicleRowSkeleton = () => (
+    <TableRow>
+        <TableCell><Skeleton className="h-16 w-16 rounded-md" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+    </TableRow>
+);
+
+
+const PageSkeleton = () => (
+     <div className="flex flex-col gap-6">
+        <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
+        <Card>
+            <CardHeader>
+                <CardTitle>Todos os Veículos</CardTitle>
+                <CardDescription>Lista completa de veículos da frota e seus status.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                     <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-[80px]">Foto</TableHead>
+                            <TableHead>Placa</TableHead>
+                            <TableHead>Marca/Modelo</TableHead>
+                            <TableHead>Quilometragem</TableHead>
+                            <TableHead>Técnico</TableHead>
+                            <TableHead>Última Manut.</TableHead>
+                            <TableHead>Próxima Manut.</TableHead>
+                            <TableHead className="text-right">Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {Array.from({ length: 5 }).map((_, i) => <VehicleRowSkeleton key={i} />)}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    </div>
+);
+
+
 export default function VehiclesPage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [loading, setLoading] = useState(true);
@@ -53,50 +99,9 @@ export default function VehiclesPage() {
         return { label: 'Em dia', variant: 'secondary' as const, className: '' };
     };
 
-    const VehicleRowSkeleton = () => (
-        <TableRow>
-            <TableCell><Skeleton className="h-16 w-16 rounded-md" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-            <TableCell className="text-right"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-        </TableRow>
-    );
 
     if (!isMounted) {
-        return (
-             <div className="flex flex-col gap-6">
-                <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Todos os Veículos</CardTitle>
-                        <CardDescription>Lista completa de veículos da frota e seus status.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                             <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[80px]">Foto</TableHead>
-                                    <TableHead>Placa</TableHead>
-                                    <TableHead>Marca/Modelo</TableHead>
-                                    <TableHead>Quilometragem</TableHead>
-                                    <TableHead>Técnico</TableHead>
-                                    <TableHead>Última Manut.</TableHead>
-                                    <TableHead>Próxima Manut.</TableHead>
-                                    <TableHead className="text-right">Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {Array.from({ length: 5 }).map((_, i) => <VehicleRowSkeleton key={i} />)}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            </div>
-        );
+        return <PageSkeleton />;
     }
 
     return (
