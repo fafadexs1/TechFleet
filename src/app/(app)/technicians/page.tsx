@@ -20,7 +20,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
@@ -37,6 +36,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { TechnicianHistorySheet } from '@/components/technicians/technician-history-sheet';
 
 function getInitials(name: string) {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -47,6 +48,7 @@ export default function TechniciansPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [banReason, setBanReason] = useState('');
+    const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
     const { toast } = useToast();
 
     const fetchTechnicians = async () => {
@@ -136,143 +138,150 @@ export default function TechniciansPage() {
     );
 
     return (
-        <div className="flex flex-col gap-6">
-            <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Users/> Técnicos</h1>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Equipe de Técnicos</CardTitle>
-                    <CardDescription>Lista de todos os técnicos cadastrados no sistema.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {error && (
-                         <Alert variant="destructive" className="mb-4">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Erro ao Carregar</AlertTitle>
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    )}
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[60px]">Foto</TableHead>
-                                <TableHead>Nome</TableHead>
-                                <TableHead>Cargo</TableHead>
-                                <TableHead>Telefone</TableHead>
-                                <TableHead>Carro Atual</TableHead>
-                                <TableHead className="text-right">Status</TableHead>
-                                <TableHead className="w-[50px]">Ações</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
-                                Array.from({ length: 5 }).map((_, i) => <TechnicianRowSkeleton key={i} />)
-                            ) : (
-                                technicians.map((tech) => (
-                                    <TableRow key={tech.id} className={tech.ban ? 'bg-destructive/10' : ''}>
-                                        <TableCell>
-                                            <Avatar className="h-10 w-10">
-                                                <AvatarImage src={tech.foto_perfil} alt={tech.display_name} data-ai-hint="person portrait" />
-                                                <AvatarFallback>{getInitials(tech.display_name)}</AvatarFallback>
-                                            </Avatar>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{tech.display_name}</div>
-                                            <div className="text-sm text-muted-foreground">{tech.email}</div>
-                                        </TableCell>
-                                        <TableCell>{tech.cargo || 'N/D'}</TableCell>
-                                        <TableCell>{tech.telefone || 'N/A'}</TableCell>
-                                        <TableCell>
-                                            {tech.carro_atual ? (
-                                                <Badge variant="secondary">{tech.carro_atual}</Badge>
-                                            ) : (
-                                                <span className="text-muted-foreground">Nenhum</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex gap-2 justify-end items-center flex-wrap">
-                                                {tech.ban && (
-                                                     <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Badge variant="destructive" className="cursor-pointer">
-                                                                    <Ban className="h-3 w-3 mr-1"/> Banido
-                                                                </Badge>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                <p className="max-w-xs">{tech.ban_motivo || 'Sem motivo especificado.'}</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                )}
-                                                <Badge variant={tech.online === 'true' ? 'default' : 'outline'} className={tech.online === 'true' ? 'bg-green-500/20 text-green-700 border-green-400' : ''}>
-                                                    {tech.online === 'true' ? 'Online' : 'Offline'}
-                                                </Badge>
-                                                <Badge variant={tech.ativo ? 'secondary' : 'destructive'}>
-                                                    {tech.ativo ? 'Ativo' : 'Inativo'}
-                                                </Badge>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                             <AlertDialog>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                            <MoreVertical className="h-4 w-4"/>
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        {tech.ban ? (
-                                                            <DropdownMenuItem onSelect={() => handleUnban(tech.id)}>
-                                                                <Ban className="mr-2 h-4 w-4" />
-                                                                <span>Remover Ban</span>
-                                                            </DropdownMenuItem>
-                                                        ) : (
-                                                            <AlertDialogTrigger asChild>
-                                                                <DropdownMenuItem>
-                                                                    <Ban className="mr-2 h-4 w-4" />
-                                                                    <span>Banir Técnico</span>
-                                                                </DropdownMenuItem>
-                                                            </AlertDialogTrigger>
+        <Sheet onOpenChange={(isOpen) => !isOpen && setSelectedTechnician(null)}>
+            <div className="flex flex-col gap-6">
+                <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Users/> Técnicos</h1>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Equipe de Técnicos</CardTitle>
+                        <CardDescription>Lista de todos os técnicos cadastrados. Clique em um técnico para ver seu histórico.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {error && (
+                             <Alert variant="destructive" className="mb-4">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Erro ao Carregar</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[60px]">Foto</TableHead>
+                                    <TableHead>Nome</TableHead>
+                                    <TableHead>Cargo</TableHead>
+                                    <TableHead>Telefone</TableHead>
+                                    <TableHead>Carro Atual</TableHead>
+                                    <TableHead className="text-right">Status</TableHead>
+                                    <TableHead className="w-[50px]">Ações</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {loading ? (
+                                    Array.from({ length: 5 }).map((_, i) => <TechnicianRowSkeleton key={i} />)
+                                ) : (
+                                    technicians.map((tech) => (
+                                        <SheetTrigger asChild key={tech.id}>
+                                            <TableRow onClick={() => setSelectedTechnician(tech)} className={`cursor-pointer ${tech.ban ? 'bg-destructive/10' : ''}`}>
+                                                <TableCell>
+                                                    <Avatar className="h-10 w-10">
+                                                        <AvatarImage src={tech.foto_perfil} alt={tech.display_name} data-ai-hint="person portrait" />
+                                                        <AvatarFallback>{getInitials(tech.display_name)}</AvatarFallback>
+                                                    </Avatar>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="font-medium">{tech.display_name}</div>
+                                                    <div className="text-sm text-muted-foreground">{tech.email}</div>
+                                                </TableCell>
+                                                <TableCell>{tech.cargo || 'N/D'}</TableCell>
+                                                <TableCell>{tech.telefone || 'N/A'}</TableCell>
+                                                <TableCell>
+                                                    {tech.carro_atual ? (
+                                                        <Badge variant="secondary">{tech.carro_atual}</Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">Nenhum</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex gap-2 justify-end items-center flex-wrap">
+                                                        {tech.ban && (
+                                                             <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Badge variant="destructive" className="cursor-pointer">
+                                                                            <Ban className="h-3 w-3 mr-1"/> Banido
+                                                                        </Badge>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p className="max-w-xs">{tech.ban_motivo || 'Sem motivo especificado.'}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
                                                         )}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Banir {tech.display_name}?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Esta ação irá bloquear o acesso do técnico ao aplicativo. Ele não poderá mais fazer login.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="ban-reason">Motivo do Banimento (Obrigatório)</Label>
-                                                        <Input 
-                                                            id="ban-reason" 
-                                                            placeholder="Ex: Violação dos termos de serviço"
-                                                            value={banReason}
-                                                            onChange={(e) => setBanReason(e.target.value)}
-                                                        />
-                                                     </div>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleBan(tech.id)} disabled={!banReason}>
-                                                            Confirmar Banimento
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                     {!loading && technicians.length === 0 && !error && (
-                        <div className="text-center py-10 text-muted-foreground">
-                            Nenhum técnico encontrado.
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+                                                        <Badge variant={tech.online === 'true' ? 'default' : 'outline'} className={tech.online === 'true' ? 'bg-green-500/20 text-green-700 border-green-400' : ''}>
+                                                            {tech.online === 'true' ? 'Online' : 'Offline'}
+                                                        </Badge>
+                                                        <Badge variant={tech.ativo ? 'secondary' : 'destructive'}>
+                                                            {tech.ativo ? 'Ativo' : 'Inativo'}
+                                                        </Badge>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                     <AlertDialog>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                                    <MoreVertical className="h-4 w-4"/>
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                                                {tech.ban ? (
+                                                                    <DropdownMenuItem onSelect={() => handleUnban(tech.id)}>
+                                                                        <Ban className="mr-2 h-4 w-4" />
+                                                                        <span>Remover Ban</span>
+                                                                    </DropdownMenuItem>
+                                                                ) : (
+                                                                    <AlertDialogTrigger asChild>
+                                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                                            <Ban className="mr-2 h-4 w-4" />
+                                                                            <span>Banir Técnico</span>
+                                                                        </DropdownMenuItem>
+                                                                    </AlertDialogTrigger>
+                                                                )}
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Banir {tech.display_name}?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Esta ação irá bloquear o acesso do técnico ao aplicativo. Ele não poderá mais fazer login.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                             <div className="grid gap-2">
+                                                                <Label htmlFor="ban-reason">Motivo do Banimento (Obrigatório)</Label>
+                                                                <Input 
+                                                                    id="ban-reason" 
+                                                                    placeholder="Ex: Violação dos termos de serviço"
+                                                                    value={banReason}
+                                                                    onChange={(e) => setBanReason(e.target.value)}
+                                                                />
+                                                             </div>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleBan(tech.id)} disabled={!banReason}>
+                                                                    Confirmar Banimento
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </TableCell>
+                                            </TableRow>
+                                        </SheetTrigger>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                         {!loading && technicians.length === 0 && !error && (
+                            <div className="text-center py-10 text-muted-foreground">
+                                Nenhum técnico encontrado.
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+             <SheetContent className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto">
+                 {selectedTechnician && <TechnicianHistorySheet technician={selectedTechnician} />}
+            </SheetContent>
+        </Sheet>
     );
 }
