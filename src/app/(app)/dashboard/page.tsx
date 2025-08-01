@@ -19,7 +19,7 @@ async function getDashboardData() {
     const recentActivitiesPromise = supabase.from('atividades_recentes').select('*').order('created_at', { ascending: false }).limit(5);
     const monthlyExpensesPromise = supabase.from('registros').select('gasto').gte('datahora', firstDayOfMonth.toISOString());
     const weeklyExpensesPromise = supabase.from('registros').select('datahora, gasto').gte('datahora', sevenDaysAgo.toISOString());
-    const onlineTechniciansRecordsPromise = supabase.from('registros').select('id, tecnico_nome, placa_carro, inicio_expediente').is('final_expediente', null).eq('registro_motivo', 'Expediente');
+    const onlineTechniciansRecordsPromise = supabase.from('registros').select('id, tecnico_nome, placa_carro, inicio_expediente, tecnicoresponsavel').is('final_expediente', null).eq('registro_motivo', 'Expediente');
 
     const [
         vehiclesResult,
@@ -43,14 +43,22 @@ async function getDashboardData() {
     
     const monthlyExpenses = (monthlyExpensesResult.data as DailyRecord[] || [])
         .reduce((sum, r) => sum + (r.gasto || 0), 0);
+        
+    const technicians = (techniciansResult.data as Technician[]) || [];
+    const onlineTechniciansRecords = (onlineTechniciansResult.data as (Pick<DailyRecord, 'id' | 'tecnico_nome' | 'placa_carro' | 'inicio_expediente' | 'tecnicoresponsavel'>)[]) || [];
+    
+    const bannedTechnicianIds = new Set(technicians.filter(t => t.ban).map(t => t.uuid));
+    const filteredOnlineTechnicians = onlineTechniciansRecords.filter(
+        record => !record.tecnicoresponsavel || !bannedTechnicianIds.has(record.tecnicoresponsavel)
+    );
 
     return {
         vehicles: (vehiclesResult.data as Vehicle[]) || [],
-        technicians: (techniciansResult.data as Technician[]) || [],
+        technicians: technicians,
         recentActivities: (recentActivitiesResult.data as RecentActivity[]) || [],
         monthlyExpenses,
         weeklyExpenses: (weeklyExpensesResult.data as DailyRecord[]) || [],
-        onlineTechniciansRecords: (onlineTechniciansResult.data as (Pick<DailyRecord, 'id' | 'tecnico_nome' | 'placa_carro' | 'inicio_expediente'>)[]) || [],
+        onlineTechniciansRecords: filteredOnlineTechnicians,
     }
 }
 
