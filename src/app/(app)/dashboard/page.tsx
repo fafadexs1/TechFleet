@@ -33,7 +33,7 @@ async function getDashboardData() {
         techniciansPromise,
         recentActivitiesPromise,
         monthlyExpensesPromise,
-        weeklyExpensesResult,
+        weeklyExpensesPromise,
         onlineTechniciansRecordsPromise,
     ]);
 
