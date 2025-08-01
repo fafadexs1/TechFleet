@@ -21,8 +21,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +53,7 @@ export default function TechniciansPage() {
     const [banReason, setBanReason] = useState('');
     const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
     const [isAddTechnicianSheetOpen, setAddTechnicianSheetOpen] = useState(false);
+    const [existingCargos, setExistingCargos] = useState<string[]>([]);
     const { toast } = useToast();
 
     const fetchTechnicians = async () => {
@@ -67,6 +68,8 @@ export default function TechniciansPage() {
             console.error('Error fetching technicians:', error);
             setError('Não foi possível carregar os dados dos técnicos. Tente novamente mais tarde.');
         } else {
+            const uniqueCargos = [...new Set(data.map(t => t.cargo).filter(Boolean))];
+            setExistingCargos(uniqueCargos);
             setTechnicians(data as Technician[]);
         }
         setLoading(false);
@@ -165,7 +168,7 @@ export default function TechniciansPage() {
                                     Crie um novo usuário e adicione seus detalhes. Um e-mail de confirmação será enviado.
                                 </SheetDescription>
                             </SheetHeader>
-                            <AddTechnicianSheet onTechnicianAdded={handleTechnicianAdded} />
+                            <AddTechnicianSheet onTechnicianAdded={handleTechnicianAdded} existingCargos={existingCargos} />
                         </SheetContent>
                     </Sheet>
                 </div>

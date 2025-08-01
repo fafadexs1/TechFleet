@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import type { NewTechnician } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formSchema = z.object({
   display_name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -31,9 +32,10 @@ const formSchema = z.object({
 
 interface AddTechnicianSheetProps {
   onTechnicianAdded: () => void;
+  existingCargos: string[];
 }
 
-export function AddTechnicianSheet({ onTechnicianAdded }: AddTechnicianSheetProps) {
+export function AddTechnicianSheet({ onTechnicianAdded, existingCargos }: AddTechnicianSheetProps) {
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -156,9 +158,18 @@ export function AddTechnicianSheet({ onTechnicianAdded }: AddTechnicianSheetProp
           render={({ field }) => (
             <FormItem>
               <FormLabel>Cargo</FormLabel>
-              <FormControl>
-                <Input placeholder="Técnico de Campo" {...field} />
-              </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Selecione um cargo" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    {existingCargos.map((cargo) => (
+                        <SelectItem key={cargo} value={cargo}>{cargo}</SelectItem>
+                    ))}
+                    </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
