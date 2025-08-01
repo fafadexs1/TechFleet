@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, Filter, TrendingUp, Car, PlusCircle, Paperclip, CheckCircle } from 'lucide-react';
+import { Wallet, Filter, TrendingUp, Car, PlusCircle, Paperclip, CheckCircle, DollarSign } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -336,5 +336,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
     </div>
   );
 }
+
+    
 
     
