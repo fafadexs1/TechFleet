@@ -147,9 +147,8 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
     const dayData = groupedExpenses[date];
     const recordsToUpdate = dayData.records.filter(r => !r.pago);
     const recordIdsToUpdate = recordsToUpdate.map(r => r.id);
-    const firstRecord = recordsToUpdate[0];
 
-    if (!firstRecord) {
+    if (recordsToUpdate.length === 0) {
         toast({ title: "Nenhuma despesa para pagar", variant: "destructive"});
         setLoadingPayment(null);
         return;
@@ -173,11 +172,11 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
     const { error: paymentError } = await supabase
       .from('pagamentos')
       .insert({ 
-            motivo: `Pagamento das despesas de ${format(parseISO(date), 'dd/MM/yyyy')}`,
-            nomepagamento: `Despesas Diárias - ${firstRecord.tecnico_nome || 'N/A'}`,
+            motivo: 'Abastecimento',
+            nomepagamento: `Despesas do dia ${format(parseISO(date), 'dd/MM/yyyy')}`,
             valorapagar: dayData.total,
             pagamentofeito: true,
-            tecnico: user.id, // Changed to the logged-in user's ID
+            tecnico: user.id,
             created_at: new Date().toISOString(),
             comprovantes_abastecimentos: receiptUrls.length > 0 ? receiptUrls : null,
             valores_abastecidos: expenseValues,
