@@ -29,6 +29,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { Skeleton } from '../ui/skeleton';
+import type { Technician } from '@/types';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Gauge },
@@ -43,17 +44,30 @@ const menuItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const [technician, setTechnician] = useState<Technician | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserData = async () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+
+      if (user) {
+        const { data: techData, error } = await supabase
+            .from('membros')
+            .select('*')
+            .eq('uuid', user.id)
+            .single();
+        
+        if (techData) {
+            setTechnician(techData as Technician);
+        }
+      }
       setLoading(false);
     };
 
-    fetchUser();
+    fetchUserData();
   }, []);
 
   const handleLogout = async () => {
@@ -115,7 +129,7 @@ export function AppSidebar() {
                     </Avatar>
                     <div className="flex-1">
                         <p className="font-bold text-sm text-sidebar-foreground">{user?.user_metadata.full_name || 'Admin'}</p>
-                        <p className="text-xs text-sidebar-foreground/70">{user?.email}</p>
+                        <p className="text-xs text-sidebar-foreground/70">{technician?.cargo || user?.email}</p>
                     </div>
                     <Button variant="ghost" size="icon" asChild onClick={handleLogout} className="text-sidebar-foreground/70 hover:bg-sidebar-accent/20 hover:text-sidebar-foreground">
                         <Link href="/">
