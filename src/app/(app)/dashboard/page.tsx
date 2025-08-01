@@ -19,7 +19,7 @@ async function getDashboardData() {
     const recentActivitiesPromise = supabase.from('atividades_recentes').select('*').order('created_at', { ascending: false }).limit(5);
     const monthlyExpensesPromise = supabase.from('registros').select('gasto').gte('datahora', firstDayOfMonth.toISOString());
     const weeklyExpensesPromise = supabase.from('registros').select('datahora, gasto').gte('datahora', sevenDaysAgo.toISOString());
-    const onlineTechniciansRecordsPromise = supabase.from('registros').select('tecnico_nome, placa_carro, inicio_expediente').is('final_expediente', null).eq('registro_motivo', 'Expediente');
+    const onlineTechniciansRecordsPromise = supabase.from('registros').select('id, tecnico_nome, placa_carro, inicio_expediente').is('final_expediente', null).eq('registro_motivo', 'Expediente');
 
     const [
         vehiclesResult,
@@ -50,7 +50,7 @@ async function getDashboardData() {
         recentActivities: (recentActivitiesResult.data as RecentActivity[]) || [],
         monthlyExpenses,
         weeklyExpenses: (weeklyExpensesResult.data as DailyRecord[]) || [],
-        onlineTechniciansRecords: (onlineTechniciansResult.data as DailyRecord[]) || [],
+        onlineTechniciansRecords: (onlineTechniciansResult.data as (Pick<DailyRecord, 'id' | 'tecnico_nome' | 'placa_carro' | 'inicio_expediente'>)[]) || [],
     }
 }
 
