@@ -1,5 +1,5 @@
 
-import { Car, Users, Wrench, Wallet, BarChart3, Activity } from 'lucide-react';
+import { Car, Users, Wrench, Wallet, BarChart3, Trophy } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { supabase } from '@/lib/supabase/client';
 import type { Vehicle, Technician, RecentActivity, DailyRecord } from '@/types';
@@ -8,6 +8,7 @@ import { OnlineTechnicians } from '@/components/dashboard/online-technicians';
 import { RecentActivityList } from '@/components/dashboard/recent-activity';
 import { MaintenanceAlerts } from '@/components/dashboard/maintenance-alerts';
 import { startOfMonth, subDays } from 'date-fns';
+import { TopTechniciansByKm } from '@/components/dashboard/top-technicians-by-km';
 
 async function getDashboardData() {
     const today = new Date();
@@ -20,6 +21,7 @@ async function getDashboardData() {
     const monthlyExpensesPromise = supabase.from('registros').select('gasto').gte('datahora', firstDayOfMonth.toISOString());
     const weeklyExpensesPromise = supabase.from('registros').select('datahora, gasto').gte('datahora', sevenDaysAgo.toISOString());
     const onlineTechniciansRecordsPromise = supabase.from('registros').select('id, tecnico_nome, placa_carro, inicio_expediente, tecnicoresponsavel').is('final_expediente', null).eq('registro_motivo', 'Expediente');
+    const monthlyKmPromise = supabase.from('registros').select('tecnicoresponsavel, somar_km').gte('datahora', firstDayOfMonth.toISOString()).gt('somar_km', 0);
 
     const [
         vehiclesResult,
@@ -28,6 +30,7 @@ async function getDashboardData() {
         monthlyExpensesResult,
         weeklyExpensesResult,
         onlineTechniciansResult,
+        monthlyKmResult,
     ] = await Promise.all([
         vehiclesPromise,
         techniciansPromise,
@@ -35,6 +38,7 @@ async function getDashboardData() {
         monthlyExpensesPromise,
         weeklyExpensesPromise,
         onlineTechniciansRecordsPromise,
+        monthlyKmPromise,
     ]);
 
     if (vehiclesResult.error) throw new Error('Failed to fetch vehicles');
@@ -52,6 +56,21 @@ async function getDashboardData() {
         record => !record.tecnicoresponsavel || !bannedTechnicianIds.has(record.tecnicoresponsavel)
     );
 
+    const kmByTechnician = (monthlyKmResult.data || []).reduce((acc, record) => {
+        if (record.tecnicoresponsavel && record.somar_km) {
+            acc[record.tecnicoresponsavel] = (acc[record.tecnicoresponsavel] || 0) + record.somar_km;
+        }
+        return acc;
+    }, {} as Record<string, number>);
+
+    const topTechnicians = Object.entries(kmByTechnician)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([uuid, totalKm]) => ({
+            uuid,
+            totalKm
+        }));
+
     return {
         vehicles: (vehiclesResult.data as Vehicle[]) || [],
         technicians: technicians,
@@ -59,6 +78,7 @@ async function getDashboardData() {
         monthlyExpenses,
         weeklyExpenses: (weeklyExpensesResult.data as DailyRecord[]) || [],
         onlineTechniciansRecords: filteredOnlineTechnicians,
+        topTechnicians,
     }
 }
 
@@ -71,6 +91,7 @@ export default async function DashboardPage() {
         monthlyExpenses,
         weeklyExpenses,
         onlineTechniciansRecords,
+        topTechnicians,
     } = await getDashboardData();
     
     const activeTechnicians = technicians.filter(t => t.online === 'true' && !t.ban).length;
@@ -114,6 +135,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="lg:col-span-1 space-y-6">
                     <MaintenanceAlerts vehicles={vehicles} />
+                    <TopTechniciansByKm topTechnicians={topTechnicians} technicianMap={technicianMap} />
                     <RecentActivityList activities={recentActivities} technicianMap={technicianMap} />
                 </div>
             </div>

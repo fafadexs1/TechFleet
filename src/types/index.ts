@@ -65,6 +65,7 @@ export type DailyRecord = {
   placa_carro: string;
   km_inicial: number;
   km_final?: number;
+  somar_km?: number;
   inicio_expediente?: string;
   final_expediente?: string;
   abastecido?: number; // Liters
@@ -127,5 +128,3 @@ export type Database = {
     }
   }
 }
-
-    
