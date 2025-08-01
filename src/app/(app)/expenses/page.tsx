@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, DollarSign, Wallet, Filter } from 'lucide-react';
+import { AlertCircle, DollarSign, Wallet, Filter, TrendingUp, Car } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type GroupedExpenses = {
@@ -43,6 +43,18 @@ const ExpenseSkeleton = () => (
       ))}
     </CardContent>
   </Card>
+);
+
+const SummaryCard = ({ title, value, icon: Icon }: { title: string; value: string; icon: React.ElementType }) => (
+    <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+            <Icon className="h-6 w-6 text-primary"/>
+        </div>
+        <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className="font-headline text-2xl font-bold">{value}</p>
+        </div>
+    </div>
 );
 
 export default function ExpensesPage() {
@@ -86,7 +98,7 @@ export default function ExpensesPage() {
     fetchData();
   }, []);
 
-  const { years, monthOptions, filteredExpenses } = useMemo(() => {
+  const { years, monthOptions, filteredExpenses, summary } = useMemo(() => {
     const years = [...new Set(allExpenses.map(r => parseISO(r.datahora).getFullYear().toString()))].sort((a,b) => b.localeCompare(a));
     
     const monthOptions = [
@@ -105,7 +117,28 @@ export default function ExpensesPage() {
         return yearMatch && monthMatch;
     });
 
-    return { years, monthOptions, filteredExpenses: filtered };
+    const summaryData = filtered.reduce((acc, record) => {
+        acc.totalSpent += record.gasto || 0;
+        
+        if (record.placa_carro) {
+            acc.carCounts[record.placa_carro] = (acc.carCounts[record.placa_carro] || 0) + 1;
+        }
+
+        return acc;
+    }, { totalSpent: 0, carCounts: {} as Record<string, number> });
+
+    const mostFrequentCar = Object.keys(summaryData.carCounts).length > 0 
+        ? Object.entries(summaryData.carCounts).sort((a,b) => b[1] - a[1])[0][0]
+        : 'Nenhum';
+
+    const summary = {
+        totalSpent: summaryData.totalSpent,
+        totalTransactions: filtered.length,
+        mostFrequentCar: mostFrequentCar
+    }
+
+
+    return { years, monthOptions, filteredExpenses: filtered, summary };
   }, [allExpenses, selectedYear, selectedMonth]);
 
 
@@ -181,6 +214,19 @@ export default function ExpensesPage() {
                 </div>
             </CardContent>
         </Card>
+
+        {!loading && filteredExpenses.length > 0 && (
+             <Card>
+                <CardHeader>
+                     <CardTitle>Resumo do Mês</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <SummaryCard title="Gasto Total" value={`R$ ${summary.totalSpent.toFixed(2).replace('.', ',')}`} icon={DollarSign} />
+                    <SummaryCard title="Total de Transações" value={summary.totalTransactions.toString()} icon={TrendingUp} />
+                    <SummaryCard title="Carro Mais Utilizado" value={summary.mostFrequentCar} icon={Car} />
+                </CardContent>
+            </Card>
+        )}
 
 
       {loading ? (
