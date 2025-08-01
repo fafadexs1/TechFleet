@@ -42,13 +42,44 @@ const VehicleRowSkeleton = () => (
 );
 
 const getMaintenanceStatus = (vehicle: Vehicle) => {
-    if (!vehicle.proxima_manutencao) return { label: 'N/D', key: 'nodate', variant: 'secondary' as const, className: '' };
+    if (!vehicle.proxima_manutencao) {
+        return { 
+            label: 'N/D', 
+            key: 'nodate', 
+            variant: 'secondary' as const, 
+            className: '',
+            description: 'Próxima revisão por KM não definida.'
+        };
+    }
     
     const kmRemaining = vehicle.proxima_manutencao - vehicle.quilometragem;
+    const kmFormatted = Math.abs(kmRemaining).toLocaleString('pt-BR');
 
-    if (kmRemaining <= 0) return { label: 'Atrasada', key: 'overdue', variant: 'destructive' as const, className: '' };
-    if (kmRemaining <= 2000) return { label: 'Próxima', key: 'soon', variant: 'default' as const, className: 'bg-yellow-500/20 text-yellow-700 border-yellow-400' };
-    return { label: 'Em dia', key: 'ok', variant: 'secondary' as const, className: '' };
+    if (kmRemaining <= 0) {
+        return { 
+            label: 'Atrasada', 
+            key: 'overdue', 
+            variant: 'destructive' as const, 
+            className: '',
+            description: `Revisão atrasada em ${kmFormatted} km.`
+        };
+    }
+    if (kmRemaining <= 2000) {
+        return { 
+            label: 'Próxima', 
+            key: 'soon', 
+            variant: 'default' as const, 
+            className: 'bg-yellow-500/20 text-yellow-700 border-yellow-400',
+            description: `Faltam ${kmFormatted} km para a próxima revisão.`
+        };
+    }
+    return { 
+        label: 'Em dia', 
+        key: 'ok', 
+        variant: 'secondary' as const, 
+        className: '',
+        description: `Faltam ${kmFormatted} km para a próxima revisão.`
+    };
 };
 
 
@@ -356,7 +387,14 @@ export default function VehiclesPage() {
                                                             )}
                                                     </TableCell>
                                                     <TableCell className="text-right">
-                                                        <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>{status.description}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
                                                     </TableCell>
                                                 </TableRow>
                                             </SheetTrigger>
