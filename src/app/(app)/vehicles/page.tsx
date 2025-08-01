@@ -7,8 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { User, AlertCircle, Car, Mail, Phone, PlusCircle, Filter, Search, Wrench } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase/client';
 import type { Vehicle, Technician } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -129,23 +127,38 @@ export default function VehiclesPage() {
     if (!isMounted) {
         return (
              <div className="flex flex-col gap-6">
-                <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
+                <div className="flex items-center justify-between">
+                    <Skeleton className="h-9 w-72" />
+                    <Skeleton className="h-10 w-36" />
+                </div>
                  <Card>
                     <CardHeader>
-                         <Skeleton className="h-8 w-48" />
-                         <Skeleton className="h-4 w-64" />
+                        <Skeleton className="h-6 w-48 mb-2" />
+                        <Skeleton className="h-4 w-80" />
+                    </CardHeader>
+                    <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                         <Skeleton className="h-6 w-40 mb-2" />
+                         <Skeleton className="h-4 w-96" />
                     </CardHeader>
                     <CardContent>
                          <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[80px]">Foto</TableHead>
-                                    <TableHead>Placa</TableHead>
-                                    <TableHead>Marca/Modelo</TableHead>
-                                    <TableHead>Quilometragem</TableHead>
-                                    <TableHead>Técnico</TableHead>
-                                    <TableHead>Próxima Revisão (km)</TableHead>
-                                    <TableHead className="text-right">Status</TableHead>
+                                    <TableHead className="w-[80px]"><Skeleton className="h-4 w-12" /></TableHead>
+                                    <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+                                    <TableHead><Skeleton className="h-4 w-28" /></TableHead>
+                                    <TableHead><Skeleton className="h-4 w-32" /></TableHead>
+                                    <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                                    <TableHead><Skeleton className="h-4 w-40" /></TableHead>
+                                    <TableHead className="text-right"><Skeleton className="h-4 w-32" /></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
