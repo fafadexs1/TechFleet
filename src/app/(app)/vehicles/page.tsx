@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { VehicleHistorySheet } from '@/components/vehicles/vehicle-history-sheet';
+import { useMounted } from '@/hooks/use-mounted';
 
 
 function getInitials(name: string) {
@@ -45,6 +46,7 @@ export default function VehiclesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+    const isMounted = useMounted();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -89,9 +91,42 @@ export default function VehiclesPage() {
         oneMonthFromNow.setMonth(today.getMonth() + 1);
 
         if (maintenanceDate < today) return { label: 'Atrasada', variant: 'destructive' as const, className: '' };
-        if (maintenanceDate <= oneMonthFromNow) return { label: 'Próxima', variant: 'default' as const, className: 'bg-accent text-accent-foreground hover:bg-accent/80' };
+        if (maintenanceDate <= oneMonthFromNow) return { label: 'Próxima', variant: 'default' as const, className: 'bg-yellow-500/20 text-yellow-700 border-yellow-400' };
         return { label: 'Em dia', variant: 'secondary' as const, className: '' };
     };
+
+    if (!isMounted) {
+        return (
+             <div className="flex flex-col gap-6">
+                <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Todos os Veículos</CardTitle>
+                        <CardDescription>Lista completa de veículos da frota e seus status.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[80px]">Foto</TableHead>
+                                    <TableHead>Placa</TableHead>
+                                    <TableHead>Marca/Modelo</TableHead>
+                                    <TableHead>Quilometragem</TableHead>
+                                    <TableHead>Técnico</TableHead>
+                                    <TableHead>Última Manut.</TableHead>
+                                    <TableHead>Próxima Manut.</TableHead>
+                                    <TableHead className="text-right">Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {Array.from({ length: 5 }).map((_, i) => <VehicleRowSkeleton key={i} />)}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
     return (
         <Sheet onOpenChange={(isOpen) => !isOpen && setSelectedVehicle(null)}>

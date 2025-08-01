@@ -1,17 +1,21 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import type { DailyRecord, Vehicle } from '@/types';
-import { AlertCircle, Calendar, Droplet, Fuel, Route } from 'lucide-react';
+import { AlertCircle, Calendar as CalendarIcon, Fuel, Route, Filter } from 'lucide-react';
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { format, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DateRange } from 'react-day-picker';
 
 interface VehicleHistorySheetProps {
   vehicle: Vehicle;
@@ -33,21 +37,24 @@ const HistorySkeleton = () => (
 );
 
 export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
-  const [records, setRecords] = useState<DailyRecord[]>([]);
+  const [allRecords, setAllRecords] = useState<DailyRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: new Date(),
+  });
 
   useEffect(() => {
     if (!vehicle.placa) {
-        setError("Veículo sem placa para buscar histórico.");
         setLoading(false);
+        setError("Veículo sem placa para buscar histórico.");
         return;
     };
 
-    const fetchRecords = async () => {
+    const fetchAllRecords = async () => {
       setLoading(true);
       setError(null);
-
       const { data, error } = await supabase
         .from('registros')
         .select('*')
@@ -59,13 +66,22 @@ export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
         console.error('Error fetching vehicle records:', error);
         setError('Não foi possível carregar o histórico do veículo.');
       } else {
-        setRecords(data as DailyRecord[]);
+        setAllRecords(data as DailyRecord[]);
       }
       setLoading(false);
     };
 
-    fetchRecords();
+    fetchAllRecords();
   }, [vehicle]);
+
+  const filteredRecords = useMemo(() => {
+    return allRecords.filter(record => {
+      const recordDate = new Date(record.datahora);
+      if (!dateRange?.from || !dateRange?.to) return true;
+      return recordDate >= dateRange.from && recordDate <= dateRange.to;
+    });
+  }, [allRecords, dateRange]);
+
 
   const EventIcon = ({ motivo }: { motivo: string }) => {
     const iconWrapperClass = "flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
@@ -75,13 +91,13 @@ export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
     if (motivo === 'Abastecimento') {
         return <div className={`${iconWrapperClass} bg-green-100 text-green-600`}><Fuel className="h-5 w-5"/></div>
     }
-    return <div className={`${iconWrapperClass} bg-muted text-muted-foreground`}><Calendar className="h-5 w-5"/></div>
+    return <div className={`${iconWrapperClass} bg-muted text-muted-foreground`}><CalendarIcon className="h-5 w-5"/></div>
   }
 
   const ExpedienteDetails = ({ record }: { record: DailyRecord }) => (
       <div className="text-sm text-muted-foreground space-y-1">
-          <p><strong>Início:</strong> {format(new Date(record.inicio_expediente!), 'HH:mm')} - <strong>Fim:</strong> {record.final_expediente ? format(new Date(record.final_expediente), 'HH:mm') : 'Em andamento'}</p>
-          <p><strong>Distância:</strong> {record.km_final ? `${record.km_final - record.km_inicial} km` : 'N/D'} (de {record.km_inicial} km para {record.km_final || '...'} km)</p>
+          <p><strong>Início:</strong> {record.inicio_expediente ? format(new Date(record.inicio_expediente), 'HH:mm') : 'N/A'} - <strong>Fim:</strong> {record.final_expediente ? format(new Date(record.final_expediente), 'HH:mm') : 'Em andamento'}</p>
+          <p><strong>Distância:</strong> {record.km_final && record.km_inicial ? `${record.km_final - record.km_inicial} km` : 'N/D'} (de {record.km_inicial} km para {record.km_final || '...'} km)</p>
       </div>
   );
   
@@ -102,6 +118,52 @@ export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
         </SheetDescription>
       </SheetHeader>
       <Separator className="my-4" />
+
+      <Card className="my-4 mr-6">
+        <CardHeader>
+            <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5"/>
+                <h3 className="font-semibold">Filtrar por Período</h3>
+            </div>
+        </CardHeader>
+        <CardContent>
+             <Popover>
+                <PopoverTrigger asChild>
+                <Button
+                    id="date"
+                    variant={"outline"}
+                    className="w-full justify-start text-left font-normal"
+                >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                    dateRange.to ? (
+                        <>
+                        {format(dateRange.from, "LLL dd, y", { locale: ptBR })} -{" "}
+                        {format(dateRange.to, "LLL dd, y", { locale: ptBR })}
+                        </>
+                    ) : (
+                        format(dateRange.from, "LLL dd, y", { locale: ptBR })
+                    )
+                    ) : (
+                    <span>Escolha um período</span>
+                    )}
+                </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                    locale={ptBR}
+                />
+                </PopoverContent>
+            </Popover>
+        </CardContent>
+      </Card>
+
       <div className="py-4 pr-6">
         {loading ? (
             <HistorySkeleton />
@@ -111,9 +173,9 @@ export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
                 <AlertTitle>Erro</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
-        ) : records.length > 0 ? (
+        ) : filteredRecords.length > 0 ? (
             <div className="relative pl-6 before:absolute before:left-11 before:top-0 before:h-full before:w-px before:bg-border">
-                {records.map((record) => (
+                {filteredRecords.map((record) => (
                     <div key={record.id} className="relative mb-8 flex items-start gap-6">
                         <EventIcon motivo={record.registro_motivo} />
                          <div className="flex-1">
@@ -128,12 +190,12 @@ export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
                 ))}
             </div>
         ) : (
-          <Card className="text-center">
+          <Card className="text-center mr-6">
             <CardContent className="py-12">
-              <Calendar className="mx-auto h-12 w-12 text-muted-foreground" />
+              <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-4 font-semibold">Nenhum Registro Encontrado</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Não há registros de expediente ou abastecimento para este veículo.
+                Não há registros de expediente ou abastecimento para este veículo no período selecionado.
               </p>
             </CardContent>
           </Card>
