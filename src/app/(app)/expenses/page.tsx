@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import type { DailyRecord, Technician } from '@/types';
+import type { DailyRecord, Technician, Vehicle } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,8 +12,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, DollarSign, Wallet, Filter, TrendingUp, Car } from 'lucide-react';
+import { AlertCircle, DollarSign, Wallet, Filter, TrendingUp, Car, PlusCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { AddExpenseSheet } from '@/components/expenses/add-expense-sheet';
 
 type GroupedExpenses = {
   [date: string]: {
@@ -64,39 +67,47 @@ export default function ExpensesPage() {
 
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
-  const [technicians, setTechnicians] = useState<Map<string, Technician>>(new Map());
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isAddSheetOpen, setAddSheetOpen] = useState(false);
 
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    const { data: expensesData, error: expensesError } = await supabase
+      .from('registros')
+      .select('*')
+      .gt('gasto', 0)
+      .order('datahora', { ascending: false });
+
+    if (expensesError) {
+      console.error('Error fetching expenses:', expensesError);
+      setError('Não foi possível carregar as despesas.');
+      setLoading(false);
+      return;
+    }
+    setAllExpenses(expensesData as DailyRecord[]);
+
+    // Fetch technicians and vehicles for the form
+    const { data: techsData, error: techsError } = await supabase.from('membros').select('*');
+    if (techsError) console.warn('Could not fetch technicians', techsError);
+    else setTechnicians(techsData as Technician[]);
+    
+    const { data: vehiclesData, error: vehiclesError } = await supabase.from('carros').select('*');
+    if (vehiclesError) console.warn('Could not fetch vehicles', vehiclesError);
+    else setVehicles(vehiclesData as Vehicle[]);
+
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      
-      const { data: expensesData, error: expensesError } = await supabase
-        .from('registros')
-        .select('*')
-        .gt('gasto', 0)
-        .order('datahora', { ascending: false });
-
-      if (expensesError) {
-        console.error('Error fetching expenses:', expensesError);
-        setError('Não foi possível carregar as despesas.');
-        setLoading(false);
-        return;
-      }
-      
-      const { data: techsData, error: techsError } = await supabase.from('membros').select('*');
-      if (techsError) {
-        console.warn('Could not fetch technicians', techsError);
-      } else {
-        setTechnicians(new Map(techsData.map(t => [t.uuid, t])));
-      }
-
-      setAllExpenses(expensesData as DailyRecord[]);
-      setLoading(false);
-    };
     fetchData();
   }, []);
+
+  const technicianMap = useMemo(() => {
+    return new Map(technicians.map(t => [t.uuid, t]));
+  }, [technicians]);
 
   const { years, monthOptions, filteredExpenses, summary } = useMemo(() => {
     const years = [...new Set(allExpenses.map(r => parseISO(r.datahora).getFullYear().toString()))].sort((a,b) => b.localeCompare(a));
@@ -164,16 +175,44 @@ export default function ExpensesPage() {
   const sortedDates = Object.keys(groupedExpenses).sort((a, b) => b.localeCompare(a));
   const defaultOpenAccordion = sortedDates.slice(0, 1);
 
+  const handleExpenseAdded = () => {
+    fetchData(); // Refetch all data
+    setAddSheetOpen(false);
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="space-y-1">
-        <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-          <DollarSign className="h-7 w-7" />
-          Controle de Despesas
-        </h1>
-        <p className="text-muted-foreground">
-          Histórico de todos os gastos registrados, agrupados por dia.
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
+            <DollarSign className="h-7 w-7" />
+            Controle de Despesas
+          </h1>
+          <p className="text-muted-foreground">
+            Histórico de todos os gastos registrados, agrupados por dia.
+          </p>
+        </div>
+         <Sheet open={isAddSheetOpen} onOpenChange={setAddSheetOpen}>
+          <SheetTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Despesa
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="w-full sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle>Adicionar Nova Despesa</SheetTitle>
+              <SheetDescription>
+                Registre um novo gasto manualmente.
+              </SheetDescription>
+            </SheetHeader>
+            <AddExpenseSheet 
+                onExpenseAdded={handleExpenseAdded} 
+                technicians={technicians} 
+                vehicles={vehicles} 
+            />
+          </SheetContent>
+        </Sheet>
       </div>
 
        <Card>
@@ -289,7 +328,7 @@ export default function ExpensesPage() {
                           <TableRow key={record.id}>
                             <TableCell>{format(parseISO(record.datahora), 'HH:mm')}</TableCell>
                             <TableCell className="font-medium">{record.registro_motivo}</TableCell>
-                            <TableCell>{technicians.get(record.tecnicoresponsavel!)?.display_name || record.tecnico_nome}</TableCell>
+                            <TableCell>{technicianMap.get(record.tecnicoresponsavel!)?.display_name || record.tecnico_nome}</TableCell>
                             <TableCell>{record.placa_carro}</TableCell>
                             <TableCell className="text-right font-mono">
                               R$ {record.gasto?.toFixed(2).replace('.', ',')}
