@@ -12,8 +12,8 @@ function getInitials(name: string) {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 }
 
-export function RecentActivityList({ activities, technicians }: { activities: RecentActivity[], technicians: Technician[] }) {
-    const technicianMap = new Map(technicians.map(t => [t.uuid, t]));
+export function RecentActivityList({ activities, technicianMap }: { activities: RecentActivity[], technicianMap: Map<string, Technician> }) {
+    
     return (
         <Card>
             <CardHeader>

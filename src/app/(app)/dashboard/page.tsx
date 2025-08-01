@@ -73,8 +73,10 @@ export default async function DashboardPage() {
         onlineTechniciansRecords,
     } = await getDashboardData();
     
-    const activeTechnicians = technicians.filter(t => t.online === 'true').length;
+    const activeTechnicians = technicians.filter(t => t.online === 'true' && !t.ban).length;
     const pendingMaintenance = vehicles.filter(v => v.proxima_manutencao && v.quilometragem >= v.proxima_manutencao).length;
+    
+    const technicianMap = new Map(technicians.map(t => [t.uuid, t]));
 
     return (
         <div className="flex flex-col gap-6">
@@ -88,7 +90,7 @@ export default async function DashboardPage() {
                 />
                 <StatCard 
                     title="Técnicos Online" 
-                    value={`${activeTechnicians} / ${technicians.length}`} 
+                    value={`${activeTechnicians} / ${technicians.filter(t => !t.ban).length}`} 
                     icon={Users}
                     description="Técnicos com expediente aberto"
                 />
@@ -112,7 +114,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="lg:col-span-1 space-y-6">
                     <MaintenanceAlerts vehicles={vehicles} />
-                    <RecentActivityList activities={recentActivities} technicians={technicians} />
+                    <RecentActivityList activities={recentActivities} technicianMap={technicianMap} />
                 </div>
             </div>
         </div>
