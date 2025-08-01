@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { User, AlertCircle, Car, Mail, Phone, PlusCircle } from 'lucide-react';
+import { User, AlertCircle, Car, Mail, Phone, PlusCircle, Filter, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase/client';
@@ -20,6 +20,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescri
 import { VehicleHistorySheet } from '@/components/vehicles/vehicle-history-sheet';
 import { AddVehicleSheet } from '@/components/vehicles/add-vehicle-sheet';
 import { useMounted } from '@/hooks/use-mounted';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 
 function getInitials(name: string) {
@@ -40,6 +42,18 @@ const VehicleRowSkeleton = () => (
     </TableRow>
 );
 
+const getMaintenanceStatus = (dateStr?: string) => {
+    if (!dateStr) return { label: 'N/D', key: 'nodate', variant: 'secondary' as const, className: '' };
+    const maintenanceDate = new Date(dateStr);
+    const today = new Date();
+    const oneMonthFromNow = new Date();
+    oneMonthFromNow.setMonth(today.getMonth() + 1);
+
+    if (maintenanceDate < today) return { label: 'Atrasada', key: 'overdue', variant: 'destructive' as const, className: '' };
+    if (maintenanceDate <= oneMonthFromNow) return { label: 'Próxima', key: 'soon', variant: 'default' as const, className: 'bg-yellow-500/20 text-yellow-700 border-yellow-400' };
+    return { label: 'Em dia', key: 'ok', variant: 'secondary' as const, className: '' };
+};
+
 
 export default function VehiclesPage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -48,6 +62,7 @@ export default function VehiclesPage() {
     const [error, setError] = useState<string | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [isAddVehicleSheetOpen, setAddVehicleSheetOpen] = useState(false);
+    const [filters, setFilters] = useState({ query: '', brand: 'all', status: 'all', availability: 'all' });
     const isMounted = useMounted();
 
     const fetchData = async () => {
@@ -90,30 +105,39 @@ export default function VehiclesPage() {
         fetchData(); // Refetch all data
         setAddVehicleSheetOpen(false);
     }
+    
+    const uniqueBrands = useMemo(() => [...new Set(vehicles.map(v => v.marca))], [vehicles]);
 
-    const getMaintenanceStatus = (dateStr?: string) => {
-        if (!dateStr) return { label: 'N/D', variant: 'secondary' as const, className: '' };
-        const maintenanceDate = new Date(dateStr);
-        const today = new Date();
-        const oneMonthFromNow = new Date();
-        oneMonthFromNow.setMonth(today.getMonth() + 1);
+    const filteredVehicles = useMemo(() => {
+        return vehicles.filter(vehicle => {
+            const queryLower = filters.query.toLowerCase();
+            const searchMatch = !filters.query ||
+                vehicle.placa?.toLowerCase().includes(queryLower) ||
+                vehicle.modelo.toLowerCase().includes(queryLower) ||
+                vehicle.marca.toLowerCase().includes(queryLower);
 
-        if (maintenanceDate < today) return { label: 'Atrasada', variant: 'destructive' as const, className: '' };
-        if (maintenanceDate <= oneMonthFromNow) return { label: 'Próxima', variant: 'default' as const, className: 'bg-yellow-500/20 text-yellow-700 border-yellow-400' };
-        return { label: 'Em dia', variant: 'secondary' as const, className: '' };
-    };
+            const brandMatch = filters.brand === 'all' || vehicle.marca === filters.brand;
+            
+            const statusMatch = filters.status === 'all' || getMaintenanceStatus(vehicle.data_proxima_manutencao).key === filters.status;
+
+            const availabilityMatch = filters.availability === 'all' || (filters.availability === 'available' && !vehicle.tecnico_atual) || (filters.availability === 'in_use' && !!vehicle.tecnico_atual);
+
+            return searchMatch && brandMatch && statusMatch && availabilityMatch;
+        });
+    }, [vehicles, filters]);
+
 
     if (!isMounted) {
         return (
              <div className="flex flex-col gap-6">
                 <h1 className="font-headline text-3xl font-bold flex items-center gap-2"><Car/> Frota de Veículos</h1>
-                <Card>
+                 <Card>
                     <CardHeader>
-                        <CardTitle>Todos os Veículos</CardTitle>
-                        <CardDescription>Lista completa de veículos da frota e seus status.</CardDescription>
+                         <Skeleton className="h-8 w-48" />
+                         <Skeleton className="h-4 w-64" />
                     </CardHeader>
                     <CardContent>
-                        <Table>
+                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[80px]">Foto</TableHead>
@@ -159,10 +183,65 @@ export default function VehiclesPage() {
                         </SheetContent>
                     </Sheet>
                 </div>
+
                 <Card>
                     <CardHeader>
-                        <CardTitle>Todos os Veículos</CardTitle>
-                        <CardDescription>Lista completa de veículos da frota e seus status. Clique em um veículo para ver seu histórico.</CardDescription>
+                        <div className="flex items-center gap-2 mb-2">
+                             <Filter className="h-5 w-5"/>
+                             <CardTitle className="text-xl font-semibold">Filtros da Frota</CardTitle>
+                        </div>
+                        <CardDescription>Use os filtros abaixo para refinar a sua busca por veículos.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                             <Input 
+                                placeholder="Buscar por placa, marca, modelo..." 
+                                className="pl-9"
+                                value={filters.query}
+                                onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
+                            />
+                        </div>
+                         <Select value={filters.brand} onValueChange={(value) => setFilters(prev => ({ ...prev, brand: value }))}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Filtrar por marca" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todas as Marcas</SelectItem>
+                                {uniqueBrands.map(brand => (
+                                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                         <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Status da Manutenção" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Qualquer Status</SelectItem>
+                                <SelectItem value="ok">Em dia</SelectItem>
+                                <SelectItem value="soon">Próxima</SelectItem>
+                                <SelectItem value="overdue">Atrasada</SelectItem>
+                                <SelectItem value="nodate">Não definida</SelectItem>
+                            </SelectContent>
+                        </Select>
+                         <Select value={filters.availability} onValueChange={(value) => setFilters(prev => ({ ...prev, availability: value }))}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Disponibilidade" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="available">Disponível</SelectItem>
+                                <SelectItem value="in_use">Em uso</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Resultados ({filteredVehicles.length})</CardTitle>
+                        <CardDescription>Lista de veículos da frota. Clique em um para ver seu histórico.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {error && (
@@ -188,8 +267,8 @@ export default function VehiclesPage() {
                             <TableBody>
                                 {loading ? (
                                     Array.from({ length: 5 }).map((_, i) => <VehicleRowSkeleton key={i} />)
-                                ) : vehicles.length > 0 ? (
-                                    vehicles.map((vehicle) => {
+                                ) : filteredVehicles.length > 0 ? (
+                                    filteredVehicles.map((vehicle) => {
                                         const status = getMaintenanceStatus(vehicle.data_proxima_manutencao);
                                         const technician = vehicle.tecnico_atual ? technicians.get(vehicle.tecnico_atual) : undefined;
 
@@ -263,7 +342,7 @@ export default function VehiclesPage() {
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={8} className="h-24 text-center">
-                                            Nenhum veículo encontrado.
+                                            Nenhum veículo encontrado para os filtros selecionados.
                                         </TableCell>
                                     </TableRow>
                                 )}
