@@ -47,28 +47,29 @@ export function TechnicianHistorySheet({ technician }: TechnicianHistorySheetPro
   });
 
   useEffect(() => {
-    if (!technician.uuid) {
-        setLoading(false);
-        setError("Técnico sem UUID para buscar histórico.");
-        return;
-    };
-
     const fetchAllRecords = async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await supabase
-        .from('registros')
-        .select('*')
-        .eq('tecnicoresponsavel', technician.uuid)
-        .order('datahora', { ascending: false });
+        if (!technician?.uuid) {
+            setError("ID do técnico não encontrado. Não é possível buscar o histórico.");
+            setLoading(false);
+            return;
+        }
 
-      if (error) {
-        console.error('Error fetching technician records:', error);
-        setError('Não foi possível carregar o histórico do técnico.');
-      } else {
-        setAllRecords(data as DailyRecord[]);
-      }
-      setLoading(false);
+        setLoading(true);
+        setError(null);
+        
+        const { data, error: fetchError } = await supabase
+            .from('registros')
+            .select('*')
+            .eq('tecnicoresponsavel', technician.uuid)
+            .order('datahora', { ascending: false });
+
+        if (fetchError) {
+            console.error('Error fetching technician records:', fetchError);
+            setError('Não foi possível carregar o histórico do técnico.');
+        } else {
+            setAllRecords(data as DailyRecord[]);
+        }
+        setLoading(false);
     };
 
     fetchAllRecords();
