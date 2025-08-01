@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { User, AlertCircle, Car, Mail, Phone, PlusCircle, Filter, Search, Wrench } from 'lucide-react';
+import { User, AlertCircle, Car, Mail, Phone, PlusCircle, Filter, Search, Wrench, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import type { Vehicle, Technician } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +21,8 @@ import { useMounted } from '@/hooks/use-mounted';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 function getInitials(name: string) {
     if (!name) return '';
@@ -35,8 +36,7 @@ const VehicleRowSkeleton = () => (
         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
         <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
     </TableRow>
 );
@@ -61,7 +61,7 @@ const getMaintenanceStatus = (vehicle: Vehicle) => {
             key: 'overdue', 
             variant: 'destructive' as const, 
             className: '',
-            description: `Revisão atrasada em ${kmFormatted} km.`
+            description: `Revisão por KM atrasada em ${kmFormatted} km.`
         };
     }
     if (kmRemaining <= 2000) {
@@ -186,8 +186,8 @@ export default function VehiclesPage() {
                                     <TableHead className="w-[80px]"><Skeleton className="h-4 w-12" /></TableHead>
                                     <TableHead><Skeleton className="h-4 w-20" /></TableHead>
                                     <TableHead><Skeleton className="h-4 w-28" /></TableHead>
-                                    <TableHead><Skeleton className="h-4 w-32" /></TableHead>
                                     <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                                    <TableHead><Skeleton className="h-4 w-32" /></TableHead>
                                     <TableHead><Skeleton className="h-4 w-40" /></TableHead>
                                     <TableHead className="text-right"><Skeleton className="h-4 w-32" /></TableHead>
                                 </TableRow>
@@ -302,7 +302,7 @@ export default function VehiclesPage() {
                                         <TableHead>Marca/Modelo</TableHead>
                                         <TableHead>Quilometragem</TableHead>
                                         <TableHead>Técnico</TableHead>
-                                        <TableHead>Próxima Revisão (km)</TableHead>
+                                        <TableHead>Próxima Revisão</TableHead>
                                         <TableHead className="text-right">Status Manutenção</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -328,7 +328,10 @@ export default function VehiclesPage() {
                                                         />
                                                     </TableCell>
                                                     <TableCell className="font-mono">{vehicle.placa || 'N/A'}</TableCell>
-                                                    <TableCell className="font-medium">{vehicle.marca} {vehicle.modelo}</TableCell>
+                                                    <TableCell>
+                                                        <p className="font-medium">{vehicle.marca} {vehicle.modelo}</p>
+                                                        {vehicle.bindado && <Badge variant="outline">Blindado</Badge>}
+                                                    </TableCell>
                                                     <TableCell>{vehicle.quilometragem ? vehicle.quilometragem.toLocaleString('pt-BR') : '0'} km</TableCell>
                                                     <TableCell>
                                                         {technician ? (
@@ -370,16 +373,19 @@ export default function VehiclesPage() {
                                                         )}
                                                     </TableCell>
                                                     <TableCell>
-                                                        {vehicle.proxima_manutencao ? (
+                                                        {vehicle.data_proxima_manutencao ? (
                                                             <Tooltip>
                                                                 <TooltipTrigger>
-                                                                     <div className="flex items-center gap-2">
-                                                                        <Wrench className="h-4 w-4 text-muted-foreground" />
-                                                                        <span>{vehicle.proxima_manutencao.toLocaleString('pt-BR')} km</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                                                                        <span>{format(parseISO(vehicle.data_proxima_manutencao), 'dd/MM/yyyy')}</span>
                                                                     </div>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent>
-                                                                    <p>Última revisão em: {vehicle.ultima_manutencao?.toLocaleString('pt-BR')} km</p>
+                                                                    <div className='space-y-1'>
+                                                                        <p>Próxima revisão KM: {vehicle.proxima_manutencao?.toLocaleString('pt-BR') || 'N/A'} km</p>
+                                                                        <p>Última revisão KM: {vehicle.ultima_manutencao?.toLocaleString('pt-BR') || 'N/A'} km</p>
+                                                                    </div>
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                             ) : (
@@ -401,7 +407,7 @@ export default function VehiclesPage() {
                                         )})
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="h-24 text-center">
+                                            <TableCell colSpan={7} className="h-24 text-center">
                                                 Nenhum veículo encontrado para os filtros selecionados.
                                             </TableCell>
                                         </TableRow>

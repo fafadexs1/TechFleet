@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { Vehicle } from "@/types";
 import { Wrench } from "lucide-react";
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useMounted } from "@/hooks/use-mounted";
 import { Skeleton } from "../ui/skeleton";
@@ -62,7 +62,7 @@ export function MaintenanceAlerts({ vehicles }: { vehicles: Vehicle[] }) {
                                 </div>
                                 <div className="text-right">
                                     <Badge variant={new Date(vehicle.data_proxima_manutencao!) < new Date() ? 'destructive' : 'default'} className={new Date(vehicle.data_proxima_manutencao!) < new Date() ? '' : 'bg-accent text-accent-foreground hover:bg-accent/80'}>
-                                        {formatDistanceToNow(new Date(vehicle.data_proxima_manutencao!), { addSuffix: true, locale: ptBR })}
+                                        {formatDistanceToNow(parseISO(vehicle.data_proxima_manutencao!), { addSuffix: true, locale: ptBR })}
                                     </Badge>
                                     <p className="text-xs text-muted-foreground mt-1">
                                         {new Date(vehicle.data_proxima_manutencao!).toLocaleDateString('pt-BR')}
