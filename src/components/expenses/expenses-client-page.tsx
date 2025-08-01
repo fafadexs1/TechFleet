@@ -163,7 +163,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
             valorapagar: dayData.total,
             pagamentofeito: true,
             tecnico: firstRecord.tecnicoresponsavel,
-            created_at: new Date(date).toISOString().split('T')[0],
+            created_at: new Date().toISOString(),
        } as Payment);
 
     if (paymentError) {
@@ -189,7 +189,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
         <div className="flex items-center justify-end">
             <Sheet open={isAddSheetOpen} onOpenChange={setAddSheetOpen}>
             <SheetTrigger asChild>
@@ -198,7 +198,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                 Adicionar Despesa
                 </Button>
             </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-md">
+            <SheetContent className="w-full sm:max-w-md overflow-y-auto">
                 <SheetHeader>
                 <SheetTitle>Adicionar Nova Despesa</SheetTitle>
                 <SheetDescription>
@@ -221,8 +221,8 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                     <h3 className="font-semibold text-lg">Filtros</h3>
                 </div>
             </CardHeader>
-            <CardContent className="flex gap-4">
-                <div className="flex flex-col gap-2 w-[180px]">
+            <CardContent className="flex flex-wrap gap-4">
+                <div className="flex flex-col gap-2 flex-grow sm:flex-grow-0 sm:w-[180px]">
                     <label className="text-sm font-medium">Mês</label>
                     <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                         <SelectTrigger>
@@ -237,7 +237,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="flex flex-col gap-2 w-[120px]">
+                <div className="flex flex-col gap-2 flex-grow sm:flex-grow-0 sm:w-[120px]">
                     <label className="text-sm font-medium">Ano</label>
                     <Select value={selectedYear} onValueChange={setSelectedYear}>
                         <SelectTrigger>
@@ -375,6 +375,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
           })}
         </Accordion>
       )}
-    </>
+    </div>
   );
 }
+
