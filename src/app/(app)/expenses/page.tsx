@@ -12,11 +12,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, DollarSign, Wallet, Filter, TrendingUp, Car, PlusCircle } from 'lucide-react';
+import { AlertCircle, DollarSign, Wallet, Filter, TrendingUp, Car, PlusCircle, Paperclip } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { AddExpenseSheet } from '@/components/expenses/add-expense-sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import Image from 'next/image';
 
 type GroupedExpenses = {
   [date: string]: {
@@ -320,7 +322,8 @@ export default function ExpensesPage() {
                           <TableHead>Técnico</TableHead>
                           <TableHead>Placa</TableHead>
                           <TableHead className="text-right">Valor</TableHead>
-                          <TableHead className="text-right">Status</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -333,10 +336,35 @@ export default function ExpensesPage() {
                             <TableCell className="text-right font-mono">
                               R$ {record.gasto?.toFixed(2).replace('.', ',')}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-center">
                               <Badge variant={record.pago ? 'secondary' : 'outline'}>
                                 {record.pago ? 'Pago' : 'Pendente'}
                               </Badge>
+                            </TableCell>
+                             <TableCell className="text-right">
+                              {record.comprovante_gasolina && (
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <Paperclip className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-3xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Comprovante de Despesa</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="relative h-[80vh] w-full">
+                                      <Image
+                                        src={record.comprovante_gasolina}
+                                        alt={`Comprovante para ${record.registro_motivo}`}
+                                        fill
+                                        style={{ objectFit: 'contain' }}
+                                        data-ai-hint="receipt"
+                                      />
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
