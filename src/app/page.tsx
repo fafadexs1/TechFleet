@@ -10,17 +10,21 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -28,11 +32,11 @@ export default function LoginPage() {
     });
 
     if (error) {
-      toast({
-        title: 'Erro de Login',
-        description: error.message,
-        variant: 'destructive',
-      });
+        if (error.message === 'Invalid login credentials') {
+            setError('E-mail ou senha inválidos. Por favor, tente novamente.');
+        } else {
+            setError(error.message);
+        }
     } else {
       toast({
         title: 'Login bem-sucedido!',
@@ -80,8 +84,16 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Sua senha"
                 />
               </div>
+               {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Erro de autenticação</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
               <Button type="submit" className="w-full font-bold" disabled={loading}>
                 {loading ? 'Entrando...' : 'Entrar'}
               </Button>
