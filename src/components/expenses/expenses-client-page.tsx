@@ -46,10 +46,10 @@ interface ExpensesClientPageProps {
     vehicles: Vehicle[];
 }
 
-export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: initialTechnicians, vehicles: initialVehicles }: ExpensesClientPageProps) {
+export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: initialTechnicians, vehicles: initialVehles }: ExpensesClientPageProps) {
   const [allExpenses, setAllExpenses] = useState<DailyRecord[]>(initialExpenses);
   const [technicians, setTechnicians] = useState<Technician[]>(initialTechnicians);
-  const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
+  const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehles);
   const [loadingPayment, setLoadingPayment] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -158,6 +158,10 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
     const receiptUrls = recordsToUpdate
       .map(r => r.comprovante_gasolina)
       .filter((url): url is string => !!url);
+    
+    const expenseValues = recordsToUpdate
+        .map(r => r.gasto)
+        .filter((gasto): gasto is number => gasto !== null && gasto !== undefined);
 
     const { error: paymentError } = await supabase
       .from('pagamentos')
@@ -169,6 +173,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
             tecnico: firstRecord.tecnicoresponsavel,
             created_at: new Date().toISOString(),
             comprovantes_abastecimentos: receiptUrls.length > 0 ? receiptUrls : null,
+            valores_abastecidos: expenseValues,
        } as Payment);
 
     if (paymentError) {
@@ -383,4 +388,3 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
     </div>
   );
 }
-

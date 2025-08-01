@@ -107,6 +107,7 @@ export type Payment = {
     created_at?: string; // date in schema
     tecnico?: string; // UUID
     comprovantes_abastecimentos?: string[] | null;
+    valores_abastecidos?: number[];
 };
 
 // For supabase client, can be generated with: npx supabase gen types typescript --project-id "your-project-ref" > src/types/database.types.ts
