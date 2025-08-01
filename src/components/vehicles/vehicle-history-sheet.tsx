@@ -20,6 +20,7 @@ import { AddMaintenanceDialog } from './add-maintenance-dialog';
 
 interface VehicleHistorySheetProps {
   vehicle: Vehicle;
+  onUpdate: () => void;
 }
 
 const HistorySkeleton = () => (
@@ -37,7 +38,7 @@ const HistorySkeleton = () => (
     </div>
 );
 
-export function VehicleHistorySheet({ vehicle: initialVehicle }: VehicleHistorySheetProps) {
+export function VehicleHistorySheet({ vehicle: initialVehicle, onUpdate }: VehicleHistorySheetProps) {
   const [vehicle, setVehicle] = useState(initialVehicle);
   const [allRecords, setAllRecords] = useState<DailyRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,14 +73,18 @@ export function VehicleHistorySheet({ vehicle: initialVehicle }: VehicleHistoryS
     }
     setLoading(false);
   };
-
+  
+  // This effect runs when the sheet is opened with a new vehicle
   useEffect(() => {
+    setVehicle(initialVehicle);
     fetchAllRecords();
-  }, [vehicle]);
+  }, [initialVehicle]);
+
 
   const handleMaintenanceAdded = async () => {
     setMaintenanceDialogOpen(false);
-    // Refetch the vehicle data to show updated maintenance dates
+    onUpdate(); // Call the onUpdate prop to refetch all data on the main page
+    // Refetch the vehicle data locally to update the sheet
     const { data, error } = await supabase.from('carros').select('*').eq('id', vehicle.id).single();
     if (data) {
         setVehicle(data as Vehicle);
