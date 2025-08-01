@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import type { DailyRecord, Vehicle } from '@/types';
-import { AlertCircle, Calendar as CalendarIcon, Fuel, Route, Filter } from 'lucide-react';
+import { AlertCircle, Calendar as CalendarIcon, Fuel, Route, Filter, Wrench } from 'lucide-react';
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -16,6 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
+import { AddMaintenanceDialog } from './add-maintenance-dialog';
 
 interface VehicleHistorySheetProps {
   vehicle: Vehicle;
@@ -36,7 +37,8 @@ const HistorySkeleton = () => (
     </div>
 );
 
-export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
+export function VehicleHistorySheet({ vehicle: initialVehicle }: VehicleHistorySheetProps) {
+  const [vehicle, setVehicle] = useState(initialVehicle);
   const [allRecords, setAllRecords] = useState<DailyRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,41 +46,55 @@ export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
     from: startOfMonth(new Date()),
     to: new Date(),
   });
+  const [isMaintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchAllRecords = async () => {
     if (!vehicle.placa) {
         setLoading(false);
         setError("Veículo sem placa para buscar histórico.");
         return;
     };
 
-    const fetchAllRecords = async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await supabase
-        .from('registros')
-        .select('*')
-        .eq('placa_carro', vehicle.placa)
-        .in('registro_motivo', ['Expediente', 'Abastecimento'])
-        .order('datahora', { ascending: false });
+    setLoading(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from('registros')
+      .select('*')
+      .eq('placa_carro', vehicle.placa)
+      .in('registro_motivo', ['Expediente', 'Abastecimento', 'Manutenção'])
+      .order('datahora', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching vehicle records:', error);
-        setError('Não foi possível carregar o histórico do veículo.');
-      } else {
-        setAllRecords(data as DailyRecord[]);
-      }
-      setLoading(false);
-    };
+    if (error) {
+      console.error('Error fetching vehicle records:', error);
+      setError('Não foi possível carregar o histórico do veículo.');
+    } else {
+      setAllRecords(data as DailyRecord[]);
+    }
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchAllRecords();
   }, [vehicle]);
+
+  const handleMaintenanceAdded = async () => {
+    setMaintenanceDialogOpen(false);
+    // Refetch the vehicle data to show updated maintenance dates
+    const { data, error } = await supabase.from('carros').select('*').eq('id', vehicle.id).single();
+    if (data) {
+        setVehicle(data as Vehicle);
+    }
+    // Refetch records to show the new maintenance record
+    await fetchAllRecords();
+  };
 
   const filteredRecords = useMemo(() => {
     return allRecords.filter(record => {
       const recordDate = new Date(record.datahora);
       if (!dateRange?.from || !dateRange?.to) return true;
-      return recordDate >= dateRange.from && recordDate <= dateRange.to;
+      const toDate = new Date(dateRange.to);
+      toDate.setHours(23, 59, 59, 999);
+      return recordDate >= dateRange.from && recordDate <= toDate;
     });
   }, [allRecords, dateRange]);
 
@@ -90,6 +106,9 @@ export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
     }
     if (motivo === 'Abastecimento') {
         return <div className={`${iconWrapperClass} bg-green-100 text-green-600`}><Fuel className="h-5 w-5"/></div>
+    }
+     if (motivo === 'Manutenção') {
+        return <div className={`${iconWrapperClass} bg-yellow-100 text-yellow-600`}><Wrench className="h-5 w-5"/></div>
     }
     return <div className={`${iconWrapperClass} bg-muted text-muted-foreground`}><CalendarIcon className="h-5 w-5"/></div>
   }
@@ -109,12 +128,25 @@ export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
       </div>
   );
 
+  const ManutencaoDetails = ({ record }: { record: DailyRecord }) => (
+    <div className="text-sm text-muted-foreground space-y-1">
+        <p><strong>Observação:</strong> {record.observacao || 'Nenhuma observação.'}</p>
+        <p><strong>Quilometragem no ato:</strong> {record.km_inicial?.toLocaleString('pt-BR')} km</p>
+    </div>
+);
+
   return (
     <>
       <SheetHeader className="pr-12">
         <SheetTitle className="font-headline text-2xl">Histórico do Veículo</SheetTitle>
-        <SheetDescription>
-          Relatório de uso para o veículo {vehicle.marca} {vehicle.modelo} - <span className="font-mono">{vehicle.placa}</span>
+        <SheetDescription className="flex items-center justify-between">
+          <span>Relatório de uso para o veículo {vehicle.marca} {vehicle.modelo} - <span className="font-mono">{vehicle.placa}</span></span>
+            <AddMaintenanceDialog 
+                vehicle={vehicle} 
+                onMaintenanceAdded={handleMaintenanceAdded}
+                open={isMaintenanceDialogOpen}
+                onOpenChange={setMaintenanceDialogOpen}
+            />
         </SheetDescription>
       </SheetHeader>
       <Separator className="my-4" />
@@ -182,9 +214,10 @@ export function VehicleHistorySheet({ vehicle }: VehicleHistorySheetProps) {
                              <p className="text-xs text-muted-foreground">
                                 {format(new Date(record.datahora), "EEEE, dd 'de' MMMM, yyyy 'às' HH:mm", { locale: ptBR })}
                             </p>
-                            <h4 className="font-semibold">{record.registro_motivo} por {record.tecnico_nome}</h4>
+                            <h4 className="font-semibold capitalize">{record.registro_motivo} {record.tecnico_nome ? `por ${record.tecnico_nome}` : ''}</h4>
                             {record.registro_motivo === 'Expediente' && <ExpedienteDetails record={record} />}
                             {record.registro_motivo === 'Abastecimento' && <AbastecimentoDetails record={record} />}
+                            {record.registro_motivo === 'Manutenção' && <ManutencaoDetails record={record} />}
                         </div>
                     </div>
                 ))}
