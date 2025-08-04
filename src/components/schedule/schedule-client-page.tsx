@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar, Filter } from 'lucide-react';
 import type { DailyRecord } from '@/types';
-import { format, intervalToDuration, parseISO } from 'date-fns';
+import { format, intervalToDuration, parseISO, getUTCFullYear, getUTCMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,7 +61,7 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
     const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
 
     const { years, monthOptions, filteredRecords } = useMemo(() => {
-        const years = [...new Set(allRecords.map(r => parseISO(r.datahora).getFullYear().toString()))].sort((a,b) => b.localeCompare(a));
+        const years = [...new Set(allRecords.map(r => getUTCFullYear(parseISO(r.datahora)).toString()))].sort((a,b) => b.localeCompare(a));
         
         const monthOptions = [
             { value: '01', label: 'Janeiro' }, { value: '02', label: 'Fevereiro' },
@@ -74,8 +74,8 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
 
         const filtered = allRecords.filter(r => {
             const recordDate = parseISO(r.datahora);
-            const yearMatch = recordDate.getFullYear().toString() === selectedYear;
-            const monthMatch = (recordDate.getMonth() + 1).toString().padStart(2, '0') === selectedMonth;
+            const yearMatch = getUTCFullYear(recordDate).toString() === selectedYear;
+            const monthMatch = (getUTCMonth(recordDate) + 1).toString().padStart(2, '0') === selectedMonth;
             return yearMatch && monthMatch;
         });
 
@@ -99,7 +99,7 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
                         <h3 className="font-semibold text-lg">Filtros</h3>
                     </div>
                 </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row gap-4">
+                <CardContent className="grid gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-2 flex-grow">
                         <label className="text-sm font-medium">Mês</label>
                         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -115,7 +115,7 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="flex flex-col gap-2 sm:w-[120px]">
+                    <div className="flex flex-col gap-2 sm:w-[120px] flex-grow">
                         <label className="text-sm font-medium">Ano</label>
                         <Select value={selectedYear} onValueChange={setSelectedYear}>
                             <SelectTrigger>

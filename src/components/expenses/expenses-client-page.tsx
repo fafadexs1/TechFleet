@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { DailyRecord, Technician, Vehicle, Payment } from '@/types';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, getUTCFullYear, getUTCMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -72,7 +72,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
   }, [technicians]);
 
   const { years, monthOptions, filteredExpenses, summary } = useMemo(() => {
-    const years = [...new Set(allExpenses.map(r => parseISO(r.datahora).getFullYear().toString()))].sort((a,b) => b.localeCompare(a));
+    const years = [...new Set(allExpenses.map(r => getUTCFullYear(parseISO(r.datahora)).toString()))].sort((a,b) => b.localeCompare(a));
     
     const monthOptions = [
         { value: '01', label: 'Janeiro' }, { value: '02', label: 'Fevereiro' },
@@ -85,8 +85,8 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
 
     const filtered = allExpenses.filter(r => {
         const recordDate = parseISO(r.datahora);
-        const yearMatch = recordDate.getFullYear().toString() === selectedYear;
-        const monthMatch = (recordDate.getMonth() + 1).toString().padStart(2, '0') === selectedMonth;
+        const yearMatch = getUTCFullYear(recordDate).toString() === selectedYear;
+        const monthMatch = (getUTCMonth(recordDate) + 1).toString().padStart(2, '0') === selectedMonth;
         return yearMatch && monthMatch;
     });
 
@@ -174,7 +174,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
                     <h3 className="font-semibold text-lg">Filtros</h3>
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row gap-4">
+            <CardContent className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-2 flex-grow">
                     <label className="text-sm font-medium">Mês</label>
                     <Select value={selectedMonth} onValueChange={setSelectedMonth}>
