@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { DailyRecord, Technician, Vehicle, Payment } from '@/types';
-import { format, parseISO, getUTCFullYear, getUTCMonth } from 'date-fns';
+import { format, parseISO, getFullYear, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -72,7 +72,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
   }, [technicians]);
 
   const { years, monthOptions, filteredExpenses, summary } = useMemo(() => {
-    const years = [...new Set(allExpenses.map(r => getUTCFullYear(parseISO(r.datahora)).toString()))].sort((a,b) => b.localeCompare(a));
+    const years = [...new Set(allExpenses.map(r => getFullYear(parseISO(r.datahora)).toString()))].sort((a,b) => b.localeCompare(a));
     
     const monthOptions = [
         { value: '01', label: 'Janeiro' }, { value: '02', label: 'Fevereiro' },
@@ -85,8 +85,8 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
 
     const filtered = allExpenses.filter(r => {
         const recordDate = parseISO(r.datahora);
-        const yearMatch = getUTCFullYear(recordDate).toString() === selectedYear;
-        const monthMatch = (getUTCMonth(recordDate) + 1).toString().padStart(2, '0') === selectedMonth;
+        const yearMatch = getFullYear(recordDate).toString() === selectedYear;
+        const monthMatch = (getMonth(recordDate) + 1).toString().padStart(2, '0') === selectedMonth;
         return yearMatch && monthMatch;
     });
 
@@ -168,7 +168,7 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
         </div>
 
        <Card>
-            <CardHeader className="flex-row items-center gap-4 space-y-0 pb-4">
+            <CardHeader className="flex-col items-start gap-4 space-y-0 pb-4 sm:flex-row sm:items-center">
                 <div className="flex items-center gap-2">
                     <Filter className="h-5 w-5"/>
                     <h3 className="font-semibold text-lg">Filtros</h3>

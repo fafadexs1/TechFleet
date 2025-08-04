@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar, Filter } from 'lucide-react';
 import type { DailyRecord } from '@/types';
-import { format, intervalToDuration, parseISO, getUTCFullYear, getUTCMonth } from 'date-fns';
+import { format, intervalToDuration, parseISO, getFullYear, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,7 +61,7 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
     const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
 
     const { years, monthOptions, filteredRecords } = useMemo(() => {
-        const years = [...new Set(allRecords.map(r => getUTCFullYear(parseISO(r.datahora)).toString()))].sort((a,b) => b.localeCompare(a));
+        const years = [...new Set(allRecords.map(r => getFullYear(parseISO(r.datahora)).toString()))].sort((a,b) => b.localeCompare(a));
         
         const monthOptions = [
             { value: '01', label: 'Janeiro' }, { value: '02', label: 'Fevereiro' },
@@ -74,8 +74,8 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
 
         const filtered = allRecords.filter(r => {
             const recordDate = parseISO(r.datahora);
-            const yearMatch = getUTCFullYear(recordDate).toString() === selectedYear;
-            const monthMatch = (getUTCMonth(recordDate) + 1).toString().padStart(2, '0') === selectedMonth;
+            const yearMatch = getFullYear(recordDate).toString() === selectedYear;
+            const monthMatch = (getMonth(recordDate) + 1).toString().padStart(2, '0') === selectedMonth;
             return yearMatch && monthMatch;
         });
 
@@ -93,7 +93,7 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
     return (
         <>
             <Card>
-                <CardHeader className="flex-row items-center gap-4 space-y-0 pb-4">
+                <CardHeader className="flex-col items-start gap-4 space-y-0 pb-4 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-2">
                         <Filter className="h-5 w-5"/>
                         <h3 className="font-semibold text-lg">Filtros</h3>
