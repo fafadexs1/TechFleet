@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar, Filter } from 'lucide-react';
@@ -57,8 +57,17 @@ interface ScheduleClientPageProps {
 }
 
 export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
-    const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-    const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
+    const [selectedYear, setSelectedYear] = useState<string | undefined>(undefined);
+    const [selectedMonth, setSelectedMonth] = useState<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+          const now = new Date();
+          setSelectedYear(now.getFullYear().toString());
+          setSelectedMonth((now.getMonth() + 1).toString().padStart(2, '0'));
+        }
+    }, []);
+
 
     const { years, monthOptions, filteredRecords } = useMemo(() => {
         const years = [...new Set(allRecords.map(r => new Date(r.datahora).getFullYear().toString()))].sort((a,b) => b.localeCompare(a));
@@ -71,6 +80,10 @@ export function ScheduleClientPage({ allRecords }: ScheduleClientPageProps) {
             { value: '09', 'label': 'Setembro' }, { value: '10', 'label': 'Outubro' },
             { value: '11', 'label': 'Novembro' }, { value: '12', 'label': 'Dezembro' }
         ];
+
+        if (!selectedYear || !selectedMonth) {
+            return { years, monthOptions, filteredRecords: [] };
+        }
 
         const filtered = allRecords.filter(r => {
             const recordDate = new Date(r.datahora);

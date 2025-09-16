@@ -51,10 +51,19 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
   const [technicians, setTechnicians] = useState<Technician[]>(initialTechnicians);
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehles);
   const { toast } = useToast();
+  
+  const [selectedYear, setSelectedYear] = useState<string | undefined>(undefined);
+  const [selectedMonth, setSelectedMonth] = useState<string | undefined>(undefined);
 
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
   const [isAddSheetOpen, setAddSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const now = new Date();
+      setSelectedYear(now.getFullYear().toString());
+      setSelectedMonth((now.getMonth() + 1).toString().padStart(2, '0'));
+    }
+  }, []);
 
   const fetchData = async () => {
     const { data: expensesData } = await supabase.from('registros').select('*').gt('gasto', 0).order('datahora', { ascending: false });
@@ -82,6 +91,10 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
         { value: '09', 'label': 'Setembro' }, { value: '10', 'label': 'Outubro' },
         { value: '11', 'label': 'Novembro' }, { value: '12', 'label': 'Dezembro' }
     ];
+
+    if (!selectedYear || !selectedMonth) {
+        return { years, monthOptions, filteredExpenses: [], summary: { totalSpent: 0, totalTransactions: 0, mostFrequentCar: 'N/A' } };
+    }
 
     const filtered = allExpenses.filter(r => {
         const recordDate = new Date(r.datahora);
