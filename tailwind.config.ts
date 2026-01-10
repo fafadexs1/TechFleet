@@ -1,4 +1,4 @@
-import type {Config} from 'tailwindcss';
+import type { Config } from 'tailwindcss';
 
 export default {
   darkMode: ['class'],
@@ -65,6 +65,10 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+      },
+      boxShadow: {
+        premium: '0 10px 25px rgba(0,0,0,0.05)',
+        glow: '0 0 15px rgba(37, 99, 235, 0.3)', // Soft blue glow
       },
       borderRadius: {
         lg: 'var(--radius)',
