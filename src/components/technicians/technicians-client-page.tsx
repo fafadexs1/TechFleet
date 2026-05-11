@@ -7,9 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase/client';
+import { getTechniciansRefreshData, banTechnician, unbanTechnician, updateTechnicianPassword, generateResetToken } from '@/app/actions/technicians';
 import type { Technician } from '@/types';
-import { Ban, MoreVertical, PlusCircle } from 'lucide-react';
+import { Ban, Key, MoreVertical, PlusCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,8 +39,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { TechnicianHistorySheet } from '@/components/technicians/technician-history-sheet';
 import { AddTechnicianSheet } from '@/components/technicians/add-technician-sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Copy } from 'lucide-react';
 
 function getInitials(name: string) {
+    if (!name) return '';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 }
 
@@ -53,22 +63,16 @@ export function TechniciansClientPage({ technicians: initialTechnicians }: Techn
     const [banReason, setBanReason] = useState('');
     const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
     const [isAddTechnicianSheetOpen, setAddTechnicianSheetOpen] = useState(false);
+    const [isPasswordDialogOpen, setPasswordDialogOpen] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
     const [existingCargos, setExistingCargos] = useState<string[]>([]);
     const { toast } = useToast();
 
     const fetchTechnicians = async () => {
-        const { data, error } = await supabase
-            .from('membros')
-            .select('*')
-            .order('display_name', { ascending: true });
-
-        if (error) {
-            toast({ title: 'Erro', description: 'Não foi possível recarregar os técnicos.', variant: 'destructive' });
-        } else {
-            const uniqueCargos = [...new Set(data.map(t => t.cargo).filter(Boolean))];
-            setExistingCargos(uniqueCargos);
-            setTechnicians(data as Technician[]);
-        }
+        const data = await getTechniciansRefreshData();
+        const uniqueCargos = [...new Set(data.map((t: any) => t.cargo).filter(Boolean))];
+        setExistingCargos(uniqueCargos as string[]);
+        setTechnicians(data as Technician[]);
     };
     
     useEffect(() => {
@@ -77,15 +81,12 @@ export function TechniciansClientPage({ technicians: initialTechnicians }: Techn
     }, [initialTechnicians]);
 
     const handleBan = async (techId: number) => {
-        const { error } = await supabase
-            .from('membros')
-            .update({ ban: true, ban_motivo: banReason })
-            .eq('id', techId);
+        const result = await banTechnician(techId, banReason);
         
-        if (error) {
+        if (result.error) {
             toast({
                 title: "Erro ao Banir",
-                description: `Não foi possível banir o técnico. ${error.message}`,
+                description: result.error,
                 variant: "destructive"
             });
         } else {
@@ -93,21 +94,18 @@ export function TechniciansClientPage({ technicians: initialTechnicians }: Techn
                 title: "Técnico Banido",
                 description: "O técnico foi banido com sucesso."
             });
-            fetchTechnicians(); // Refresh list
+            fetchTechnicians();
         }
         setBanReason('');
     };
 
     const handleUnban = async (techId: number) => {
-         const { error } = await supabase
-            .from('membros')
-            .update({ ban: false, ban_motivo: null })
-            .eq('id', techId);
+        const result = await unbanTechnician(techId);
         
-        if (error) {
+        if (result.error) {
             toast({
                 title: "Erro ao Remover Banimento",
-                description: `Não foi possível remover o banimento do técnico. ${error.message}`,
+                description: result.error,
                 variant: "destructive"
             });
         } else {
@@ -115,7 +113,50 @@ export function TechniciansClientPage({ technicians: initialTechnicians }: Techn
                 title: "Banimento Removido",
                 description: "O banimento do técnico foi removido."
             });
-            fetchTechnicians(); // Refresh list
+            fetchTechnicians();
+        }
+    };
+
+    const handlePasswordChange = async () => {
+        if (!selectedTechnician) return;
+        
+        const result = await updateTechnicianPassword(selectedTechnician.id, newPassword);
+        
+        if (result.error) {
+            toast({
+                title: "Erro ao Atualizar Senha",
+                description: result.error,
+                variant: "destructive"
+            });
+        } else {
+            toast({
+                title: "Senha Atualizada",
+                description: `A senha de ${selectedTechnician.display_name} foi alterada com sucesso.`
+            });
+            setPasswordDialogOpen(false);
+            setNewPassword('');
+        }
+    };
+
+    const handleGenerateResetLink = async () => {
+        if (!selectedTechnician) return;
+        
+        const result = await generateResetToken(selectedTechnician.id);
+        
+        if (result.error) {
+            toast({
+                title: "Erro ao Gerar Link",
+                description: result.error,
+                variant: "destructive"
+            });
+        } else if (result.token) {
+            const resetUrl = `${window.location.origin}/reset-password?token=${result.token}`;
+            navigator.clipboard.writeText(resetUrl);
+            
+            toast({
+                title: "Link de Recuperação Copiado",
+                description: "O link seguro foi copiado para a área de transferência. Ele expira em 24h."
+            });
         }
     };
     
@@ -126,7 +167,7 @@ export function TechniciansClientPage({ technicians: initialTechnicians }: Techn
 
     return (
         <TooltipProvider>
-            <Sheet onOpenChange={(isOpen) => !isOpen && setSelectedTechnician(null)}>
+            <Sheet onOpenChange={(isOpen: boolean) => !isOpen && setSelectedTechnician(null)}>
                 <div className="flex items-center justify-end">
                     <Sheet open={isAddTechnicianSheetOpen} onOpenChange={setAddTechnicianSheetOpen}>
                         <SheetTrigger asChild>
@@ -207,11 +248,25 @@ export function TechniciansClientPage({ technicians: initialTechnicians }: Techn
                                                     <AlertDialog>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                                                                 <MoreVertical className="h-4 w-4"/>
                                                             </Button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                                        <DropdownMenuContent align="end" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                                                            <DropdownMenuItem onSelect={() => {
+                                                                setSelectedTechnician(tech);
+                                                                setPasswordDialogOpen(true);
+                                                            }}>
+                                                                <Key className="mr-2 h-4 w-4" />
+                                                                <span>Alterar Senha</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onSelect={() => {
+                                                                setSelectedTechnician(tech);
+                                                                handleGenerateResetLink();
+                                                            }}>
+                                                                <Copy className="mr-2 h-4 w-4" />
+                                                                <span>Gerar Link de Reset</span>
+                                                            </DropdownMenuItem>
                                                             {tech.ban ? (
                                                                 <DropdownMenuItem onSelect={() => handleUnban(tech.id)}>
                                                                     <Ban className="mr-2 h-4 w-4" />
@@ -219,7 +274,7 @@ export function TechniciansClientPage({ technicians: initialTechnicians }: Techn
                                                                 </DropdownMenuItem>
                                                             ) : (
                                                                 <AlertDialogTrigger asChild>
-                                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                                    <DropdownMenuItem onSelect={(e: Event) => e.preventDefault()}>
                                                                         <Ban className="mr-2 h-4 w-4" />
                                                                         <span>Banir Técnico</span>
                                                                     </DropdownMenuItem>
@@ -270,6 +325,37 @@ export function TechniciansClientPage({ technicians: initialTechnicians }: Techn
                     {selectedTechnician && <TechnicianHistorySheet technician={selectedTechnician} />}
                 </SheetContent>
             </Sheet>
+
+            <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Alterar Senha</DialogTitle>
+                        <DialogDescription>
+                            Digite a nova senha para {selectedTechnician?.display_name}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">Nova Senha</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Digite a nova senha"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={handlePasswordChange} disabled={!newPassword || newPassword.length < 6}>
+                            Confirmar Alteração
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </TooltipProvider>
     );
 }

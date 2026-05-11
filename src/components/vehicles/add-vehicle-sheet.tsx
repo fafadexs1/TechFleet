@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase/client';
+import { addVehicle } from '@/app/actions/vehicles';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -60,18 +60,15 @@ export function AddVehicleSheet({ onVehicleAdded }: AddVehicleSheetProps) {
     setLoading(true);
     setFormError(null);
     
-    const newVehicle: NewVehicle = {
+    const result = await addVehicle({
       ...values,
       placa: values.placa.toUpperCase(),
       data_ultima_manutencao: values.data_ultima_manutencao?.toISOString(),
       data_proxima_manutencao: values.data_proxima_manutencao?.toISOString(),
-    };
+    });
 
-    const { error } = await supabase.from('carros').insert(newVehicle);
-
-    if (error) {
-      console.error('Error inserting vehicle:', error);
-      setFormError(error.message);
+    if (result.error) {
+      setFormError(result.error);
       setLoading(false);
       return;
     }

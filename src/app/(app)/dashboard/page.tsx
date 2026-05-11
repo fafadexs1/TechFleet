@@ -1,7 +1,7 @@
 
 import { Car, Users, Wrench, Wallet, BarChart3, Trophy } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/stat-card';
-import { supabase } from '@/lib/supabase/client';
+import prisma from '@/lib/prisma';
 import type { Vehicle, Technician, RecentActivity, DailyRecord } from '@/types';
 import { WeeklyExpensesChart } from '@/components/dashboard/weekly-expenses-chart';
 import { OnlineTechnicians } from '@/components/dashboard/online-technicians';
@@ -15,22 +15,53 @@ async function getDashboardData() {
     const firstDayOfMonth = startOfMonth(today);
     const sevenDaysAgo = subDays(today, 7);
 
-    const vehiclesPromise = supabase.from('carros').select('*');
-    const techniciansPromise = supabase.from('membros').select('*');
-    const recentActivitiesPromise = supabase.from('atividades_recentes').select('*').order('created_at', { ascending: false }).limit(5);
-    const monthlyExpensesPromise = supabase.from('registros').select('gasto').gte('datahora', firstDayOfMonth.toISOString());
-    const weeklyExpensesPromise = supabase.from('registros').select('datahora, gasto').gte('datahora', sevenDaysAgo.toISOString());
-    const onlineTechniciansRecordsPromise = supabase.from('registros').select('id, tecnico_nome, placa_carro, inicio_expediente, tecnicoresponsavel').is('final_expediente', null).eq('registro_motivo', 'Expediente');
-    const monthlyKmPromise = supabase.from('registros').select('tecnicoresponsavel, somar_km').gte('datahora', firstDayOfMonth.toISOString()).gt('somar_km', 0);
+    const vehiclesPromise = prisma.carros.findMany();
+    const techniciansPromise = prisma.membros.findMany();
+    const recentActivitiesPromise = prisma.atividades_recentes.findMany({
+        orderBy: { created_at: 'desc' },
+        take: 5
+    });
+    const monthlyExpensesPromise = prisma.registros.findMany({
+        where: {
+            datahora: { gte: firstDayOfMonth }
+        },
+        select: { gasto: true }
+    });
+    const weeklyExpensesPromise = prisma.registros.findMany({
+        where: {
+            datahora: { gte: sevenDaysAgo }
+        },
+        select: { datahora: true, gasto: true }
+    });
+    const onlineTechniciansRecordsPromise = prisma.registros.findMany({
+        where: {
+            final_expediente: null,
+            registro_motivo: 'Expediente'
+        },
+        select: {
+            id: true,
+            tecnico_nome: true,
+            placa_carro: true,
+            inicio_expediente: true,
+            tecnicoresponsavel: true
+        }
+    });
+    const monthlyKmPromise = prisma.registros.findMany({
+        where: {
+            datahora: { gte: firstDayOfMonth },
+            somar_km: { gt: 0 }
+        },
+        select: { tecnicoresponsavel: true, somar_km: true }
+    });
 
     const [
-        vehiclesResult,
-        techniciansResult,
-        recentActivitiesResult,
-        monthlyExpensesResult,
-        weeklyExpensesResult,
-        onlineTechniciansResult,
-        monthlyKmResult,
+        vehiclesData,
+        techniciansData,
+        recentActivitiesData,
+        monthlyExpensesData,
+        weeklyExpensesData,
+        onlineTechniciansData,
+        monthlyKmData,
     ] = await Promise.all([
         vehiclesPromise,
         techniciansPromise,
@@ -41,43 +72,66 @@ async function getDashboardData() {
         monthlyKmPromise,
     ]);
 
-    if (vehiclesResult.error) throw new Error('Failed to fetch vehicles');
-    if (techniciansResult.error) throw new Error('Failed to fetch technicians');
-    if (recentActivitiesResult.error) throw new Error('Failed to fetch recent activities');
-    
-    const monthlyExpenses = (monthlyExpensesResult.data as DailyRecord[] || [])
-        .reduce((sum, r) => sum + (r.gasto || 0), 0);
+    const monthlyExpenses = monthlyExpensesData.reduce((sum: number, r: { gasto: number | null }) => sum + (r.gasto || 0), 0);
         
-    const technicians = (techniciansResult.data as Technician[]) || [];
-    const onlineTechniciansRecords = (onlineTechniciansResult.data as (Pick<DailyRecord, 'id' | 'tecnico_nome' | 'placa_carro' | 'inicio_expediente' | 'tecnicoresponsavel'>)[]) || [];
+    const technicians = techniciansData.map((t: any) => ({
+        ...t,
+        id: Number(t.id),
+        id_estoque_sgp: t.id_estoque_sgp ? Number(t.id_estoque_sgp) : null
+    })) as Technician[];
+
+    const onlineTechniciansRecords = onlineTechniciansData.map((r: any) => ({
+        ...r,
+        id: Number(r.id)
+    })) as any[];
     
     const bannedTechnicianIds = new Set(technicians.filter(t => t.ban).map(t => t.uuid));
     const filteredOnlineTechnicians = onlineTechniciansRecords.filter(
-        record => !record.tecnicoresponsavel || !bannedTechnicianIds.has(record.tecnicoresponsavel)
+        (record: any) => !record.tecnicoresponsavel || !bannedTechnicianIds.has(record.tecnicoresponsavel)
     );
 
-    const kmByTechnician = (monthlyKmResult.data || []).reduce((acc, record) => {
+    const kmByTechnician = monthlyKmData.reduce<Record<string, number>>((acc, record: any) => {
         if (record.tecnicoresponsavel && record.somar_km) {
-            acc[record.tecnicoresponsavel] = (acc[record.tecnicoresponsavel] || 0) + record.somar_km;
+            acc[record.tecnicoresponsavel] = (acc[record.tecnicoresponsavel] || 0) + Number(record.somar_km);
         }
         return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
-    const topTechnicians = Object.entries(kmByTechnician)
-        .sort(([, a], [, b]) => b - a)
+    const topTechnicians = (Object.entries(kmByTechnician) as [string, number][])
+        .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([uuid, totalKm]) => ({
             uuid,
-            totalKm
+            totalKm: Number(totalKm)
         }));
 
     return {
-        vehicles: (vehiclesResult.data as Vehicle[]) || [],
+        vehicles: vehiclesData.map((v: any) => ({
+            ...v,
+            id: Number(v.id),
+            proxima_manutencao: v.proxima_manutencao ? Number(v.proxima_manutencao) : 0,
+            quilometragem: v.quilometragem ? Number(v.quilometragem) : 0,
+            ultima_manutencao: v.ultima_manutencao ? Number(v.ultima_manutencao) : 0,
+            data_proxima_manutencao: v.data_proxima_manutencao?.toISOString(),
+            data_ultima_manutencao: v.data_ultima_manutencao?.toISOString(),
+            created_at: v.created_at?.toISOString(),
+        })) as Vehicle[],
         technicians: technicians,
-        recentActivities: (recentActivitiesResult.data as RecentActivity[]) || [],
+        recentActivities: recentActivitiesData.map((a: any) => ({
+            ...a,
+            id: Number(a.id),
+            created_at: a.created_at?.toISOString(),
+        })) as RecentActivity[],
         monthlyExpenses,
-        weeklyExpenses: (weeklyExpensesResult.data as DailyRecord[]) || [],
-        onlineTechniciansRecords: filteredOnlineTechnicians,
+        weeklyExpenses: weeklyExpensesData.map((r: any) => ({
+            ...r,
+            gasto: r.gasto || 0,
+            datahora: r.datahora?.toISOString(),
+        })) as DailyRecord[],
+        onlineTechniciansRecords: filteredOnlineTechnicians.map((r: any) => ({
+            ...r,
+            inicio_expediente: r.inicio_expediente?.toISOString(),
+        })),
         topTechnicians,
     }
 }

@@ -1,15 +1,184 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+}
+
+model atividades_recentes {
+  id         BigInt   @id @default(autoincrement())
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  status     String?  @db.VarChar
+  objetivo   String?  @db.VarChar
+  descricao  String?  @db.VarChar
+  tecnico    String?  @default(dbgenerated("auth.uid()")) @db.Uuid
+}
+
+model atualiza_app {
+  id          BigInt   @id @default(autoincrement())
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  apkUrl      String?  @db.VarChar
+  apkFileName String?  @db.VarChar
+  packageName String?  @db.VarChar
+  appversion  String?  @db.VarChar
+}
+
+model cadastros {
+  id        String   @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  criado_em DateTime @default(now()) @db.Timestamptz(6)
+  nome      String
+  fone      String
+  email     String
+  plano     String
+  cpf       String?
+  latitude  Float?
+  longitude Float?
+
+  @@index([cpf])
+  @@index([email])
+}
+
+model carros {
+  id                      BigInt    @id @default(autoincrement())
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  data_proxima_manutencao DateTime? @db.Timestamptz(6)
+  data_ultima_manutencao  DateTime? @db.Timestamptz(6)
+  foto_carro              String?
+  marca                   String?   @default("") @db.VarChar
+  modelo                  String?   @default("") @db.VarChar
+  placa                   String?
+  proxima_manutencao      BigInt?   @default(0)
+  quilometragem           BigInt?   @default(0)
+  ultima_manutencao       BigInt?   @default(0)
+  tecnico_atual           String?   @db.VarChar
+  displayname_tecnico     String?   @default("") @db.VarChar
+  bindado                 Boolean?  @default(false)
+}
+
+model estoque_tecnicos {
+  id           BigInt   @id @default(autoincrement())
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  uuid_tecnico String?  @db.Uuid
+  equipamentos Json[]
+}
+
+model membros {
+  id             BigInt    @id @default(autoincrement())
+  uuid           String?   @unique @default(dbgenerated("auth.uid()")) @db.Uuid
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  cargo          String?   @default("") @db.VarChar
+  carro_atual    String?   @default("")
+  display_name   String?   @default("") @db.VarChar
+  email          String?   @default("") @db.VarChar
+  online         String?   @default("") @db.VarChar
+  telefone       String?   @default("") @db.VarChar
+  foto_perfil    String?   @default("https://static-00.iconduck.com/assets.00/user-icon-1024x1024-dtzturco.png")
+  token_basic    String?   @default("")
+  usuariosgp     String?   @default("")
+  url_sgp        String?   @default("")
+  foto_carro     String?   @default("") @db.VarChar
+  ativo          Boolean?  @default(true)
+  aprovado       Boolean?  @default(false)
+  id_estoque_sgp BigInt?
+  admin          String?   @db.VarChar
+  ban            Boolean?  @default(false)
+  ban_motivo     String?
+  usuarios       usuarios? @relation(fields: [uuid], references: [id], map: "membros_usuario_fk")
+}
+
+model os_realizadas {
+  id                    BigInt   @id @default(autoincrement())
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  aberta_quantidade     BigInt?
+  tecnico               String?  @db.VarChar
+  total                 BigInt?
+  encerrada_quantidade  BigInt?
+  emexecucao_quantidade BigInt?
+  pendente_quantidade   BigInt?
+}
+
+model pagamentos {
+  id                          BigInt    @id @default(autoincrement())
+  comprovante_pagamento       String?   @db.VarChar
+  motivo                      String?   @db.VarChar
+  nomepagamento               String?   @db.VarChar
+  pagamentofeito              Boolean?
+  valorapagar                 Float?
+  valores_abastecidos         Float[]
+  carros_abastecido           String?   @unique(map: "pagamentos_carros_abastecidos_key") @db.VarChar
+  data_registro               DateTime? @default(dbgenerated("(now() AT TIME ZONE 'utc'::text)")) @db.Timestamptz(6)
+  created_at                  DateTime? @unique @db.Date
+  tecnico                     String?   @default(dbgenerated("auth.uid()")) @db.Uuid
+  comprovantes_abastecimentos String[]
+}
+
+model registros {
+  id                     BigInt    @id @default(autoincrement())
+  created_at             DateTime  @default(now()) @db.Timestamptz(6)
+  abastecido             Float?
+  carroutilizado         String?   @default("") @db.VarChar
+  comprovante_gasolina   String?   @default("")
+  datahora               DateTime? @db.Timestamptz(6)
+  gasto                  Float?    @default(0)
+  km_inicial             BigInt?   @default(0)
+  local_de_abastecimento String?   @default("") @db.VarChar
+  registro_motivo        String?   @default("") @db.VarChar
+  observacao             String?   @default("") @db.VarChar
+  preco_por_litro        Float?
+  tecnico_nome           String?   @default("") @db.VarChar
+  tecnicoresponsavel     String?   @default(dbgenerated("auth.uid()")) @db.Uuid
+  somar_km               BigInt?   @default(0)
+  km_final               BigInt?   @default(0)
+  km_inicial_foto        String?   @default("") @db.VarChar
+  km_final_foto          String?   @default("") @db.VarChar
+  finalizado             Boolean?
+  inicio_expediente      DateTime? @db.Timestamptz(6)
+  final_expediente       DateTime? @db.Timestamptz(6)
+  placa_carro            String?   @default("") @db.VarChar
+  problema_relatado      String?   @default("") @db.VarChar
+  local_abastecimento    String?   @default("") @db.VarChar
+  problema               BigInt?   @default(0)
+  foto_problema          String?   @db.VarChar
+  pago                   Boolean?
+  id_ticket              String?   @unique @db.VarChar
+  prioridade_ticket      BigInt?
+  atendido_por           String?   @db.Uuid
+  report_finalizado      Boolean?  @default(false)
+}
+
+model relatorios_por_usuario {
+  id           BigInt    @id @default(autoincrement())
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  uuid         String?   @db.Uuid
+  url_pdf      String?   @db.VarChar
+  gerado_em    DateTime? @db.Timestamptz(6)
+  nome_arquivo String?
+}
+
+model tickets_pagos {
+  id                      BigInt   @id @default(autoincrement())
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  resposta_usuario        String?  @db.VarChar
+  resposta_administrador  String?  @db.VarChar
+  id_ticket               String?  @db.VarChar
+  responsavel_chat        String?  @db.Uuid
+  aberto_por              String?  @db.Uuid
+  foto_perfil_usuario     String?  @db.VarChar
+  foto_perfil_funcionario String?  @db.VarChar
+  nome_administrador      String?  @db.VarChar
+  nome_usuario            String?  @db.VarChar
+  link_fotos              String?  @db.VarChar
+}
+
+model usuarios {
+  id         String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  nome       String
+  email      String    @unique
+  senha_hash String
+  cargo      String?
+  ativo      Boolean?  @default(true)
+  criado_em  DateTime? @default(now()) @db.Timestamptz(6)
+  membros    membros[]
 }

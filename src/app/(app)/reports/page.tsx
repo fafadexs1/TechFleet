@@ -7,7 +7,7 @@ import 'jspdf-autotable';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/lib/supabase/client';
+import { getTechnicians, getReportData } from '@/app/actions/reports';
 import type { Technician, DailyRecord } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -47,7 +47,7 @@ export default function ReportsPage() {
 
     useEffect(() => {
         const fetchTechnicians = async () => {
-            const { data, error } = await supabase.from('membros').select('*').order('display_name');
+            const { data, error } = await getTechnicians();
             if (error) {
                 setError('Não foi possível carregar a lista de técnicos.');
             } else {
@@ -64,22 +64,14 @@ export default function ReportsPage() {
         const fromDate = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1, 1);
         const toDate = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0, 23, 59, 59);
 
-        let query = supabase
-            .from('registros')
-            .select('*, tecnico_nome, tecnicoresponsavel, placa_carro, registro_motivo, datahora, km_inicial, km_final, gasto, local_de_abastecimento')
-            .gte('datahora', fromDate.toISOString())
-            .lte('datahora', toDate.toISOString())
-            .in('registro_motivo', ['Expediente', 'Abastecimento'])
-            .order('datahora', { ascending: true });
-
-        if (selectedTechnician !== 'all') {
-            query = query.eq('tecnicoresponsavel', selectedTechnician);
-        }
-
-        const { data: records, error: recordsError } = await query;
+        const { data: records, error: recordsError } = await getReportData(
+            fromDate.toISOString(),
+            toDate.toISOString(),
+            selectedTechnician
+        );
 
         if (recordsError) {
-            setError('Não foi possível buscar os registros para o relatório.');
+            setError(recordsError);
             setLoading(false);
             return;
         }
@@ -95,14 +87,14 @@ export default function ReportsPage() {
         }
 
         // Group records by technician
-        const recordsByTechnician = records.reduce((acc, record) => {
-            const techId = record.tecnicoresponsavel;
+        const recordsByTechnician = (records as any[]).reduce((acc, record) => {
+            const techId = record.tecnicoresponsavel || 'desconhecido';
             if (!acc[techId]) {
                 acc[techId] = [];
             }
             acc[techId].push(record);
             return acc;
-        }, {} as { [key: string]: DailyRecord[] });
+        }, {} as { [key: string]: any[] });
 
 
         const doc = new jsPDF();
@@ -119,7 +111,7 @@ export default function ReportsPage() {
             
             const techRecords = recordsByTechnician[techId];
             const technician = technicians.find(t => t.uuid === techId);
-            const techName = technician?.display_name || 'Técnico Desconhecido';
+            const techName = (technician as any)?.display_name || 'Técnico Desconhecido';
 
             // --- Header ---
             doc.setFontSize(18);
@@ -132,7 +124,7 @@ export default function ReportsPage() {
             doc.text(`Gerado em: ${reportDate}`, 14, 42);
 
             // --- Summary ---
-            const summary = techRecords.reduce((acc, record) => {
+            const summary = techRecords.reduce((acc: any, record: any) => {
                 if(record.registro_motivo === 'Expediente' && record.km_final && record.km_inicial) {
                     acc.totalKm += (record.km_final - record.km_inicial);
                     acc.workDays.add(format(new Date(record.datahora), 'yyyy-MM-dd'));
@@ -161,7 +153,7 @@ export default function ReportsPage() {
 
 
             // --- Details Table ---
-            const tableData = techRecords.map(r => {
+            const tableData = techRecords.map((r: any) => {
                 const date = format(new Date(r.datahora), 'dd/MM/yy HH:mm');
                 let description = '';
                 if(r.registro_motivo === 'Expediente') {

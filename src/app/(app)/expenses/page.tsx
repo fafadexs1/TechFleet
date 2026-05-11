@@ -1,35 +1,53 @@
 
-import { supabase } from '@/lib/supabase/client';
+import prisma from '@/lib/prisma';
 import type { DailyRecord, Technician, Vehicle } from '@/types';
 import { DollarSign } from 'lucide-react';
 import { ExpensesClientPage } from '@/components/expenses/expenses-client-page';
 
-
 async function getExpensesData() {
-    const expensesPromise = supabase
-      .from('registros')
-      .select('*')
-      .gt('gasto', 0)
-      .order('datahora', { ascending: false });
+    const expensesPromise = prisma.registros.findMany({
+        where: { gasto: { gt: 0 } },
+        orderBy: { datahora: 'desc' }
+    });
 
-    const techniciansPromise = supabase.from('membros').select('*');
-    const vehiclesPromise = supabase.from('carros').select('*');
+    const techniciansPromise = prisma.membros.findMany();
+    const vehiclesPromise = prisma.carros.findMany();
 
-    const [expensesResult, techsResult, vehiclesResult] = await Promise.all([
+    const [expensesData, techsData, vehiclesData] = await Promise.all([
         expensesPromise,
         techniciansPromise,
         vehiclesPromise,
     ]);
-    
-    if (expensesResult.error) throw new Error(`Failed to fetch expenses: ${expensesResult.error.message}`);
-    if (techsResult.error) console.warn('Could not fetch technicians', techsResult.error);
-    if (vehiclesResult.error) console.warn('Could not fetch vehicles', vehiclesResult.error);
-
 
     return {
-        allExpenses: (expensesResult.data as DailyRecord[]) || [],
-        technicians: (techsResult.data as Technician[]) || [],
-        vehicles: (vehiclesResult.data as Vehicle[]) || [],
+        allExpenses: expensesData.map((e: any) => ({
+            ...e,
+            id: Number(e.id),
+            km_inicial: e.km_inicial ? Number(e.km_inicial) : 0,
+            km_final: e.km_final ? Number(e.km_final) : 0,
+            somar_km: e.somar_km ? Number(e.somar_km) : 0,
+            prioridade_ticket: e.prioridade_ticket ? Number(e.prioridade_ticket) : 0,
+            datahora: e.datahora?.toISOString(),
+            created_at: e.created_at?.toISOString(),
+            inicio_expediente: e.inicio_expediente?.toISOString(),
+            final_expediente: e.final_expediente?.toISOString(),
+        })) as DailyRecord[],
+        technicians: techsData.map((t: any) => ({
+            ...t,
+            id: Number(t.id),
+            id_estoque_sgp: t.id_estoque_sgp ? Number(t.id_estoque_sgp) : null,
+            created_at: t.created_at?.toISOString(),
+        })) as Technician[],
+        vehicles: vehiclesData.map((v: any) => ({
+            ...v,
+            id: Number(v.id),
+            proxima_manutencao: v.proxima_manutencao ? Number(v.proxima_manutencao) : 0,
+            quilometragem: v.quilometragem ? Number(v.quilometragem) : 0,
+            ultima_manutencao: v.ultima_manutencao ? Number(v.ultima_manutencao) : 0,
+            data_proxima_manutencao: v.data_proxima_manutencao?.toISOString(),
+            data_ultima_manutencao: v.data_ultima_manutencao?.toISOString(),
+            created_at: v.created_at?.toISOString(),
+        })) as Vehicle[],
     }
 }
 

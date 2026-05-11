@@ -16,7 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AddExpenseSheet } from '@/components/expenses/add-expense-sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase/client';
+import { getExpensesRefreshData } from '@/app/actions/expenses';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmPaymentDialog } from './confirm-payment-dialog';
 
@@ -66,14 +66,10 @@ export function ExpensesClientPage({ allExpenses: initialExpenses, technicians: 
   }, []);
 
   const fetchData = async () => {
-    const { data: expensesData } = await supabase.from('registros').select('*').gt('gasto', 0).order('datahora', { ascending: false });
-    if(expensesData) setAllExpenses(expensesData as DailyRecord[]);
-    
-    const { data: techsData } = await supabase.from('membros').select('*');
-    if (techsData) setTechnicians(techsData as Technician[]);
-    
-    const { data: vehiclesData } = await supabase.from('carros').select('*');
-    if (vehiclesData) setVehicles(vehiclesData as Vehicle[]);
+    const data = await getExpensesRefreshData();
+    setAllExpenses(data.allExpenses as DailyRecord[]);
+    setTechnicians(data.technicians as Technician[]);
+    setVehicles(data.vehicles as Vehicle[]);
   };
 
   const technicianMap = useMemo(() => {

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase/client';
+import { addTechnician } from '@/app/actions/technicians';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -56,56 +56,18 @@ export function AddTechnicianSheet({ onTechnicianAdded, existingCargos }: AddTec
     setLoading(true);
     setFormError(null);
 
-    // This is NOT the recommended way to create users.
-    // This should be done in a server environment with admin privileges.
-    // This is a temporary solution for the demo.
-    // It creates the user but also logs them in, which is not ideal for an admin panel.
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-      options: {
-        data: {
-          full_name: values.display_name,
-        }
-      }
-    });
+    const result = await addTechnician(values);
 
-    if (authError || !authData.user) {
-      console.error('Auth Error:', authError);
-      setFormError(authError?.message || 'Não foi possível criar o usuário.');
+    if (result.error) {
+      setFormError(result.error);
       setLoading(false);
       return;
-    }
-
-    const newTechnician: NewTechnician = {
-        uuid: authData.user.id,
-        display_name: values.display_name,
-        email: values.email,
-        cargo: values.cargo,
-        telefone: values.telefone || '',
-        ativo: true,
-        aprovado: true,
-        online: 'false',
-    };
-
-    const { error: insertError } = await supabase
-        .from('membros')
-        .insert(newTechnician);
-
-    if (insertError) {
-        console.error('Insert Error:', insertError);
-        // Attempt to clean up the created auth user if the db insert fails
-        // This requires admin privileges and won't work from the client.
-        // await supabase.auth.admin.deleteUser(authData.user.id);
-        setFormError(insertError.message || 'Não foi possível salvar os detalhes do técnico.');
-        setLoading(false);
-        return;
     }
 
     setLoading(false);
     toast({
       title: 'Técnico Adicionado!',
-      description: `Um e-mail de confirmação foi enviado para ${values.email}.`,
+      description: `O técnico ${values.display_name} foi cadastrado com sucesso.`,
     });
     onTechnicianAdded();
     form.reset();

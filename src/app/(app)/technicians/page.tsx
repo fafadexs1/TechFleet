@@ -1,20 +1,25 @@
 
-import { supabase } from '@/lib/supabase/client';
+import prisma from '@/lib/prisma';
 import type { Technician } from '@/types';
 import { Users } from 'lucide-react';
 import { TechniciansClientPage } from '@/components/technicians/technicians-client-page';
 
 async function getTechniciansData() {
-    const { data, error } = await supabase
-        .from('membros')
-        .select('*')
-        .order('display_name', { ascending: true });
+    try {
+        const technicians = await prisma.membros.findMany({
+            orderBy: { display_name: 'asc' }
+        });
 
-    if (error) {
+        return technicians.map(t => ({
+            ...t,
+            id: Number(t.id),
+            id_estoque_sgp: t.id_estoque_sgp ? Number(t.id_estoque_sgp) : null,
+            created_at: t.created_at?.toISOString()
+        })) as unknown as Technician[];
+    } catch (error) {
         console.error('Error fetching technicians:', error);
         throw new Error('Não foi possível carregar os dados dos técnicos. Tente novamente mais tarde.');
     }
-    return data as Technician[];
 }
 
 export default async function TechniciansPage() {

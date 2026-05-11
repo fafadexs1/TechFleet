@@ -38,8 +38,8 @@ export function MaintenanceAlerts({ vehicles }: { vehicles: Vehicle[] }) {
                             return (
                                 <div key={vehicle.id} className="flex items-center space-x-4">
                                     <Avatar className="h-10 w-10 rounded-lg">
-                                        <AvatarImage src={vehicle.foto_carro} alt={vehicle.modelo} data-ai-hint="car side" className="rounded-lg"/>
-                                        <AvatarFallback className="rounded-lg">{vehicle.marca.charAt(0)}</AvatarFallback>
+                                        <AvatarImage src={vehicle.foto_carro || undefined} alt={vehicle.modelo || 'Veículo'} data-ai-hint="car side" className="rounded-lg"/>
+                                        <AvatarFallback className="rounded-lg">{(vehicle.marca || 'V').charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1">
                                         <p className="font-medium">{vehicle.marca} {vehicle.modelo}</p>

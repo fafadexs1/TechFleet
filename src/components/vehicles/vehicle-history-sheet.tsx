@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getVehicleRecords, getVehicleById } from '@/app/actions/vehicles';
 import type { DailyRecord, Vehicle } from '@/types';
 import { AlertCircle, Calendar as CalendarIcon, Fuel, Route, Filter, Wrench } from 'lucide-react';
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -58,19 +58,8 @@ export function VehicleHistorySheet({ vehicle: initialVehicle, onUpdate }: Vehic
 
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase
-      .from('registros')
-      .select('*')
-      .eq('placa_carro', vehicle.placa)
-      .in('registro_motivo', ['Expediente', 'Abastecimento', 'Manutenção'])
-      .order('datahora', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching vehicle records:', error);
-      setError('Não foi possível carregar o histórico do veículo.');
-    } else {
-      setAllRecords(data as DailyRecord[]);
-    }
+    const data = await getVehicleRecords(vehicle.placa);
+    setAllRecords(data as DailyRecord[]);
     setLoading(false);
   };
   
@@ -85,7 +74,7 @@ export function VehicleHistorySheet({ vehicle: initialVehicle, onUpdate }: Vehic
     setMaintenanceDialogOpen(false);
     onUpdate(); // Call the onUpdate prop to refetch all data on the main page
     // Refetch the vehicle data locally to update the sheet
-    const { data, error } = await supabase.from('carros').select('*').eq('id', vehicle.id).single();
+    const data = await getVehicleById(vehicle.id);
     if (data) {
         setVehicle(data as Vehicle);
     }

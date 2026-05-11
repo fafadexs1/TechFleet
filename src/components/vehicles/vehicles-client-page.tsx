@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { User, Mail, Phone, PlusCircle, Filter, Search, Calendar, UserMinus } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getVehiclesRefreshData, removeTechnicianFromVehicle } from '@/app/actions/vehicles';
 import type { Vehicle, Technician } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -82,62 +82,28 @@ export function VehiclesClientPage({ vehicles: initialVehicles, technicians }: V
     const { toast } = useToast();
 
     const fetchData = async () => {
-        const { data: vehiclesData, error: vehiclesError } = await supabase
-            .from('carros')
-            .select('*')
-            .order('marca', { ascending: true });
-
-        if (vehiclesError) return;
-        setVehicles(vehiclesData as Vehicle[]);
+        const data = await getVehiclesRefreshData();
+        setVehicles(data as Vehicle[]);
     };
 
     const handleRemoveTechnician = async (vehicleId: number, currentTechnicianUuid: string | null) => {
         if (!currentTechnicianUuid) return;
 
-        // 1. Update carros table
-        const { error: errorCar } = await supabase
-            .from('carros')
-            .update({
-                tecnico_atual: null,
-                displayname_tecnico: '',
-                bindado: false
-            })
-            .eq('id', vehicleId);
+        const result = await removeTechnicianFromVehicle(vehicleId, currentTechnicianUuid);
 
-        if (errorCar) {
-            console.error('Error removing technician from car:', errorCar);
+        if (result.error) {
             toast({
                 variant: "destructive",
-                title: "Erro ao atualizar veículo",
-                description: "Ocorreu um erro ao tentar remover o técnico do veículo.",
-            });
-            return;
-        }
-
-        // 2. Update membros table
-        const { error: errorMember } = await supabase
-            .from('membros')
-            .update({
-                carro_atual: '',
-                foto_carro: ''
-            })
-            .eq('uuid', currentTechnicianUuid);
-
-        if (errorMember) {
-            console.error('Error updating technician profile:', errorMember);
-            toast({
-                variant: "destructive",
-                title: "Erro ao atualizar perfil do técnico",
-                description: "O veículo foi atualizado, mas o perfil do técnico pode não ter sido sincronizado.",
+                title: "Erro ao atualizar",
+                description: result.error,
             });
         } else {
             toast({
                 title: "Técnico removido",
-                description: "O técnico foi removido do veículo e os dados foram atualizados com sucesso.",
+                description: "O técnico foi removido do veículo com sucesso.",
             });
+            fetchData();
         }
-
-        fetchData();
     };
 
     const handleVehicleAdded = () => {
@@ -145,15 +111,15 @@ export function VehiclesClientPage({ vehicles: initialVehicles, technicians }: V
         setAddVehicleSheetOpen(false);
     }
 
-    const uniqueBrands = useMemo(() => [...new Set(vehicles.map(v => v.marca))], [vehicles]);
+    const uniqueBrands = useMemo(() => [...new Set(vehicles.map(v => v.marca).filter(Boolean) as string[])], [vehicles]);
 
     const filteredVehicles = useMemo(() => {
         return vehicles.filter(vehicle => {
             const queryLower = filters.query.toLowerCase();
             const searchMatch = !filters.query ||
                 vehicle.placa?.toLowerCase().includes(queryLower) ||
-                vehicle.modelo.toLowerCase().includes(queryLower) ||
-                vehicle.marca.toLowerCase().includes(queryLower);
+                vehicle.modelo?.toLowerCase().includes(queryLower) ||
+                vehicle.marca?.toLowerCase().includes(queryLower);
 
             const brandMatch = filters.brand === 'all' || vehicle.marca === filters.brand;
 

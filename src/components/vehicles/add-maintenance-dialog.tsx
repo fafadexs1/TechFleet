@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase/client';
+import { addMaintenance } from '@/app/actions/maintenance';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -34,6 +34,8 @@ import { Textarea } from '../ui/textarea';
 const formSchema = z.object({
   ultima_manutencao: z.coerce.number().min(1, { message: 'A quilometragem da última revisão é obrigatória.' }),
   proxima_manutencao: z.coerce.number().min(1, { message: 'A quilometragem da próxima revisão é obrigatória.' }),
+  data_ultima_manutencao: z.string().refine((val) => val !== '', { message: 'A data da revisão é obrigatória.' }),
+  data_proxima_manutencao: z.string().refine((val) => val !== '', { message: 'A data da próxima revisão é obrigatória.' }),
   observacao: z.string().optional(),
 });
 
@@ -52,8 +54,10 @@ export function AddMaintenanceDialog({ vehicle, onMaintenanceAdded, open, onOpen
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      ultima_manutencao: vehicle.quilometragem || 0,
-      proxima_manutencao: (vehicle.quilometragem || 0) + 10000,
+      ultima_manutencao: Number(vehicle.quilometragem) || 0,
+      proxima_manutencao: (Number(vehicle.quilometragem) || 0) + 10000,
+      data_ultima_manutencao: new Date().toISOString().split('T')[0],
+      data_proxima_manutencao: '',
       observacao: '',
     },
   });
@@ -61,8 +65,10 @@ export function AddMaintenanceDialog({ vehicle, onMaintenanceAdded, open, onOpen
   useEffect(() => {
     if (!open) {
       form.reset({
-        ultima_manutencao: vehicle.quilometragem || 0,
-        proxima_manutencao: (vehicle.quilometragem || 0) + 10000,
+        ultima_manutencao: Number(vehicle.quilometragem) || 0,
+        proxima_manutencao: (Number(vehicle.quilometragem) || 0) + 10000,
+        data_ultima_manutencao: new Date().toISOString().split('T')[0],
+        data_proxima_manutencao: '',
         observacao: ''
       });
     }
@@ -72,42 +78,18 @@ export function AddMaintenanceDialog({ vehicle, onMaintenanceAdded, open, onOpen
     setLoading(true);
     setFormError(null);
 
-    // 1. Update the vehicle in 'carros' table with KM values for maintenance
-    const { error: vehicleUpdateError } = await supabase
-      .from('carros')
-      .update({
-        ultima_manutencao: values.ultima_manutencao,
-        proxima_manutencao: values.proxima_manutencao,
-        data_ultima_manutencao: new Date().toISOString(), // Also stamp the date of this maintenance
-      })
-      .eq('id', vehicle.id);
+    const result = await addMaintenance(Number(vehicle.id), {
+        ...values,
+        placa_carro: vehicle.placa,
+        carroutilizado: `${vehicle.marca} ${vehicle.modelo}`,
+        observacao: `Revisão realizada em ${new Date(values.data_ultima_manutencao).toLocaleDateString('pt-BR')}. Próxima prevista para ${new Date(values.data_proxima_manutencao).toLocaleDateString('pt-BR')} ou ${values.proxima_manutencao} km. \n\n${values.observacao}`,
+    });
 
-    if (vehicleUpdateError) {
-      setFormError(vehicleUpdateError.message);
+    if (result.error) {
+      setFormError(result.error);
       setLoading(false);
       return;
     }
-
-    // 2. Create a new record in 'registros' table for history
-    const { error: recordInsertError } = await supabase.from('registros').insert({
-      registro_motivo: 'Manutenção',
-      placa_carro: vehicle.placa,
-      carroutilizado: `${vehicle.marca} ${vehicle.modelo}`,
-      datahora: new Date().toISOString(),
-      km_inicial: values.ultima_manutencao, // Use km_inicial to store the mileage at the time of maintenance
-      observacao: values.observacao,
-      tecnicoresponsavel: null, // Maintenance might not be done by a technician from the list
-      tecnico_nome: 'Oficina'
-    });
-    
-    if (recordInsertError) {
-        // This is not ideal, as the vehicle might have been updated.
-        // In a real app, you might want to use a transaction.
-        setFormError(recordInsertError.message);
-        setLoading(false);
-        return;
-    }
-
 
     setLoading(false);
     toast({
@@ -119,82 +101,113 @@ export function AddMaintenanceDialog({ vehicle, onMaintenanceAdded, open, onOpen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogTrigger asChild>
-             <Button variant="outline">
-                <Wrench className="mr-2 h-4 w-4" />
-                Registrar Revisão
-            </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-                <DialogTitle>Registrar Nova Revisão por KM</DialogTitle>
-                <DialogDescription>
-                    Atualize as informações de manutenção para o veículo <span className="font-mono font-semibold">{vehicle.placa}</span>.
-                    A quilometragem atual do veículo é <span className="font-mono font-semibold">{vehicle.quilometragem.toLocaleString('pt-BR')} km</span>.
-                </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
-                <FormField
-                    control={form.control}
-                    name="ultima_manutencao"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>KM da Última Revisão</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="120000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="proxima_manutencao"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>KM da Próxima Revisão</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="130000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="observacao"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Serviços Realizados (Observações)</FormLabel>
-                        <FormControl>
-                            <Textarea
-                            placeholder="Ex: Troca de óleo e filtros, alinhamento e balanceamento."
-                            className="resize-none"
-                            {...field}
-                            />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                {formError && (
-                    <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Erro</AlertTitle>
-                        <AlertDescription>{formError}</AlertDescription>
-                    </Alert>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <Wrench className="mr-2 h-4 w-4" />
+          Registrar Revisão
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Registrar Nova Revisão</DialogTitle>
+          <DialogDescription>
+            Atualize as informações de manutenção para o veículo <span className="font-mono font-semibold">{vehicle.placa}</span>.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="data_ultima_manutencao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data da Revisão</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-                
-                <DialogFooter>
-                    <Button type="submit" disabled={loading} className="w-full">
-                        {loading ? 'Salvando...' : 'Salvar Revisão'}
-                    </Button>
-                </DialogFooter>
-            </form>
-            </Form>
-        </DialogContent>
+              />
+              <FormField
+                control={form.control}
+                name="data_proxima_manutencao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data da Próxima Revisão</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="ultima_manutencao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>KM da Última Revisão</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="120000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="proxima_manutencao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>KM da Próxima Revisão</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="130000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="observacao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Serviços Realizados (Observações)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Ex: Troca de óleo e filtros, alinhamento e balanceamento."
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {formError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro</AlertTitle>
+                <AlertDescription>{formError}</AlertDescription>
+              </Alert>
+            )}
+
+            <DialogFooter>
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? 'Salvando...' : 'Salvar Revisão'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
     </Dialog>
   );
 }

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase/client';
+import { createPayment } from '@/app/actions/payments';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -63,47 +63,11 @@ export function ConfirmPaymentDialog({ dayData, date, onPaymentConfirmed }: Conf
     setLoading(true);
     setFormError(null);
 
-    const receiptFile = values.receipt[0];
-    if (!receiptFile) {
-      setFormError('Nenhum arquivo de comprovante selecionado.');
-      setLoading(false);
-      return;
-    }
+    // STORAGE NOTICE: Since we are moving away from Supabase, 
+    // a new storage provider (S3, Cloudinary, etc.) needs to be configured.
+    // For now, we'll use a placeholder URL.
+    const dummyPublicUrl = "https://placehold.co/600x400?text=Comprovante+Pagamento";
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        toast({ title: "Erro de autenticação", description: "Usuário não encontrado. Faça login novamente.", variant: "destructive"});
-        setLoading(false);
-        return;
-    }
-
-    // 1. Upload receipt to Supabase Storage
-    const fileExt = receiptFile.name.split('.').pop();
-    const fileName = `${user.id}-${new Date().toISOString()}.${fileExt}`;
-    const filePath = `abastecimentos_comprovantes/${fileName}`;
-    
-    const { error: uploadError } = await supabase.storage
-      .from('velpro')
-      .upload(filePath, receiptFile);
-
-    if (uploadError) {
-      setFormError(`Erro no upload: ${uploadError.message}`);
-      setLoading(false);
-      return;
-    }
-    
-    // 2. Get public URL of the uploaded file
-    const { data: { publicUrl } } = supabase.storage
-      .from('velpro')
-      .getPublicUrl(filePath);
-
-    if (!publicUrl) {
-        setFormError('Não foi possível obter a URL pública do comprovante.');
-        setLoading(false);
-        return;
-    }
-
-    // 3. Create payment record
     const recordsToUpdate = dayData.records.filter(r => !r.pago);
     const receiptUrls = recordsToUpdate
       .map(r => r.comprovante_gasolina)
@@ -112,40 +76,23 @@ export function ConfirmPaymentDialog({ dayData, date, onPaymentConfirmed }: Conf
         .map(r => r.gasto)
         .filter((gasto): gasto is number => gasto !== null && gasto !== undefined);
 
-    const { error: paymentError } = await supabase
-      .from('pagamentos')
-      .insert({ 
-            motivo: 'Abastecimento',
-            nomepagamento: `Despesas do dia ${format(parseISO(date), 'dd/MM/yyyy')}`,
-            valorapagar: dayData.total,
-            pagamentofeito: true,
-            tecnico: user.id,
-            created_at: new Date().toISOString(),
-            comprovantes_abastecimentos: receiptUrls.length > 0 ? receiptUrls : null,
-            valores_abastecidos: expenseValues,
-            comprovante_pagamento: publicUrl,
-       });
+    const result = await createPayment({
+        motivo: 'Abastecimento',
+        nomepagamento: `Despesas do dia ${format(parseISO(date), 'dd/MM/yyyy')}`,
+        valorapagar: dayData.total,
+        comprovantes_abastecimentos: receiptUrls,
+        valores_abastecidos: expenseValues,
+        comprovante_pagamento: dummyPublicUrl,
+        recordIds: recordsToUpdate.map(r => r.id)
+    });
 
-    if (paymentError) {
-        toast({ title: "Erro ao registrar pagamento", description: paymentError.message, variant: "destructive" });
+    if (result.error) {
+        setFormError(result.error);
         setLoading(false);
         return;
     }
 
-    // 4. Update expense records
-    const recordIdsToUpdate = recordsToUpdate.map(r => r.id);
-    const { error: updateError } = await supabase
-        .from('registros')
-        .update({ pago: true })
-        .in('id', recordIdsToUpdate);
-    
-    if (updateError) {
-        toast({ title: "Erro ao atualizar despesas", description: updateError.message, variant: "destructive" });
-        // Handle the case where payment was created but expenses not updated
-    } else {
-        onPaymentConfirmed();
-    }
-
+    onPaymentConfirmed();
     setLoading(false);
     setOpen(false);
     form.reset();

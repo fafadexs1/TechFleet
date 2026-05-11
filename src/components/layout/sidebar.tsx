@@ -25,9 +25,9 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { supabase } from '@/lib/supabase/client';
+import { logout } from '@/app/actions/auth';
+import { getCurrentUser } from '@/app/actions/user';
 import { useEffect, useState } from 'react';
-import type { User } from '@supabase/supabase-js';
 import { Skeleton } from '../ui/skeleton';
 import type { Technician } from '@/types';
 
@@ -43,35 +43,29 @@ const menuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
-  const [technician, setTechnician] = useState<Technician | null>(null);
+  const [technician, setTechnician] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-
-      if (user) {
-        const { data: techData, error } = await supabase
-          .from('membros')
-          .select('*')
-          .eq('uuid', user.id)
-          .single();
-
+      try {
+        setLoading(true);
+        const techData = await getCurrentUser();
         if (techData) {
-          setTechnician(techData as Technician);
+          setTechnician(techData);
         }
+      } catch (err) {
+        console.error('Error fetching user data in sidebar:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchUserData();
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await logout();
   };
 
   const getInitials = (name?: string) => {

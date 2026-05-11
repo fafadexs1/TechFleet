@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getTechnicianRecords } from '@/app/actions/technicians';
 import type { DailyRecord, Technician } from '@/types';
 import { AlertCircle, Calendar as CalendarIcon, Fuel, Route, Filter, Car } from 'lucide-react';
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -57,18 +57,8 @@ export function TechnicianHistorySheet({ technician }: TechnicianHistorySheetPro
         setLoading(true);
         setError(null);
         
-        const { data, error: fetchError } = await supabase
-            .from('registros')
-            .select('*')
-            .eq('tecnicoresponsavel', technician.uuid)
-            .order('datahora', { ascending: false });
-
-        if (fetchError) {
-            console.error('Error fetching technician records:', fetchError);
-            setError('Não foi possível carregar o histórico do técnico.');
-        } else {
-            setAllRecords(data as DailyRecord[]);
-        }
+        const data = await getTechnicianRecords(technician.uuid);
+        setAllRecords(data as DailyRecord[]);
         setLoading(false);
     };
 

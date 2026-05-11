@@ -5,11 +5,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase/client';
+import { addExpense } from '@/app/actions/expenses';
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -70,23 +71,14 @@ export function AddExpenseSheet({ onExpenseAdded, technicians, vehicles }: AddEx
     const selectedTechnician = technicians.find(t => t.uuid === values.tecnicoresponsavel);
     const selectedVehicle = vehicles.find(v => v.placa === values.placa_carro);
 
-    const newRecord: Omit<DailyRecord, 'id' | 'created_at' | 'km_inicial'> = {
-        gasto: values.gasto,
-        registro_motivo: values.registro_motivo as any,
-        datahora: values.datahora.toISOString(),
-        tecnicoresponsavel: values.tecnicoresponsavel,
-        placa_carro: values.placa_carro || '',
-        observacao: values.observacao,
-        pago: values.pago,
+    const result = await addExpense({
+        ...values,
         tecnico_nome: selectedTechnician?.display_name || 'N/A',
         carroutilizado: selectedVehicle ? `${selectedVehicle.marca} ${selectedVehicle.modelo}` : 'N/A'
-    };
+    });
 
-    const { error } = await supabase.from('registros').insert(newRecord);
-
-    if (error) {
-      console.error('Error inserting expense:', error);
-      setFormError(error.message);
+    if (result.error) {
+      setFormError(result.error);
       setLoading(false);
       return;
     }
@@ -223,7 +215,9 @@ export function AddExpenseSheet({ onExpenseAdded, technicians, vehicles }: AddEx
                       <SelectContent>
                           <SelectItem value="null">Nenhum</SelectItem>
                           {vehicles.map(vehicle => (
-                              <SelectItem key={vehicle.placa} value={vehicle.placa}>{vehicle.marca} {vehicle.modelo} ({vehicle.placa})</SelectItem>
+                              <SelectItem key={vehicle.placa || vehicle.id.toString()} value={vehicle.placa || ''}>
+                                  {(vehicle.marca || '')} {(vehicle.modelo || '')} ({vehicle.placa || 'Sem placa'})
+                              </SelectItem>
                           ))}
                       </SelectContent>
                 </Select>
@@ -238,7 +232,11 @@ export function AddExpenseSheet({ onExpenseAdded, technicians, vehicles }: AddEx
               <FormItem>
                 <FormLabel>Observações</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Detalhes adicionais sobre a despesa..." {...field} />
+                  <Textarea 
+                    placeholder="Detalhes adicionais sobre a despesa..." 
+                    {...field} 
+                    value={field.value ?? ''} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
